@@ -29,8 +29,3 @@ The next planned milestones in the project are:
 
 
 The goal is to have a working prototype of an encryption proxy integrated into Strimzi by the end of M4, June 25th.
-
-
-
-
-Dates are subject to change :-)
