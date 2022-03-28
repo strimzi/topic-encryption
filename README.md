@@ -2,10 +2,10 @@
 [![Twitter Follow](https://img.shields.io/twitter/follow/strimziio.svg?style=social&label=Follow&style=for-the-badge)](https://twitter.com/strimziio)
 
 
-# Proxy-Based Topic-level Encryption at Rest for Kakfka
+# Topic-level Encryption at Rest for Apache Kafka®
 
 
-The goal of this project is to provide proxy-based, topic-level encryption-at-rest for [Apache Kafka](https://kafka.apache.org/).  
+The goal of this project is to provide proxy-based, topic-level encryption-at-rest for [Apache Kafka®](https://kafka.apache.org/).  
 To learn more about the background and architecture of topic encryption, see our [overview document](doc/README.md).
 
 The next planned milestones in the project are:
