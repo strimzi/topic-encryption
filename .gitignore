@@ -38,3 +38,7 @@ classes/
 # MacOS
 .DS_Store
 
+# config files
+vertx-proxy/src/main/resources/config.json
+
+
