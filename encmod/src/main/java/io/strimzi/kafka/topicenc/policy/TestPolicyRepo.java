@@ -9,7 +9,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * An implementation of a policy repository used for testing.
+ */
 public class TestPolicyRepo implements PolicyRepository {
+    
 
 	List<KmsDefinition> kmsDefinitions = new ArrayList<>(); 
 	List<TopicPolicy> topicPolicies = new ArrayList<>();
@@ -23,7 +27,7 @@ public class TestPolicyRepo implements PolicyRepository {
 	    policy.setKeyReference("test");
 	    policy.setTopic(EncryptionPolicy.ALL_TOPICS);
 	    
-	    policyMap.put("*", policy);
+	    policyMap.put(EncryptionPolicy.ALL_TOPICS, policy);
 	}
 	
 	@Override
