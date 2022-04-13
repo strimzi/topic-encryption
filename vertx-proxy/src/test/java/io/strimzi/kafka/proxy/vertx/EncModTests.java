@@ -38,7 +38,7 @@ class EncModTests {
     @Test
     void testEncryption() throws IOException, NoSuchAlgorithmException {
         encMod = new EncryptionModule(new TestPolicyRepo(), new TestKms());
-        dummyConfig = new Config("", 0, null);
+        dummyConfig = new Config(0, "localhost",null);
         var handler = new MessageHandler(encMod, dummyConfig);
 
         File reqDataFile = new File("src/test/resources/produce_request.hex");
@@ -63,7 +63,7 @@ class EncModTests {
 
         // set up so we can call the handler
         encMod = new EncryptionModule(new TestPolicyRepo(), new TestKms());
-        dummyConfig = new Config("", 0, null);
+        dummyConfig = this.createDummyConfig();
         var handler = new MessageHandler(encMod, dummyConfig);
         var rspBuf = Buffer.buffer(fetchRsp);
         int corrId = MsgUtil.getRspCorrId(rspBuf);
@@ -88,8 +88,6 @@ class EncModTests {
         for (FetchableTopicResponse topicRsp : responses) {
             topicRsp.partitionResponses().forEach(pd -> {
                 MemoryRecords recs = (MemoryRecords) pd.recordSet();
-            //topicRsp.partitions().forEach(partitionData -> {
-            //    MemoryRecords recs = (MemoryRecords) partitionData.records();
                 recs.records().forEach(r -> {
                     if (r.hasValue()) {
                         byte[] recordData = new byte[r.valueSize()];
@@ -100,5 +98,8 @@ class EncModTests {
             });
         }
     }
-
+    
+    private Config createDummyConfig() {
+        return new Config(0, "localhost",null);
+    }
 }
