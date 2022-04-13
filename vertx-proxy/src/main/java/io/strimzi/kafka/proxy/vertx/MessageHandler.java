@@ -72,7 +72,14 @@ public class MessageHandler implements Handler<Buffer> {
 
         // open, initialize the connection to the broker.
         this.brokerClient = context.owner().createNetClient();
-        this.brokerSocketFuture = brokerClient.connect(config.kafkaPort(), config.kafkaHostname());
+        String broker = config.kafkaHostname();
+        String[] tokens = broker.split(":");
+        if (tokens == null || tokens.length != 2) {
+            throw new IllegalArgumentException("Broker must be specified as 'hostname:port'");
+        }
+        int port = Integer.valueOf(tokens[1]);
+        String hostname = tokens[0];
+        this.brokerSocketFuture = brokerClient.connect(port, hostname);
         brokerSocketFuture
              .onSuccess(h -> {
                  LOGGER.debug("brokerSocketFuture success");
