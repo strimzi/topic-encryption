@@ -321,6 +321,10 @@ public class MessageHandler implements Handler<Buffer> {
             LOGGER.error("broker connection failed", brokerSocketFuture.cause());
             return;
         }
+        if (brokerSocketFuture.failed()) {
+            LOGGER.error("broker connection failed", brokerSocketFuture.cause());
+            return;
+        }
         NetSocket brokerSocket = brokerSocketFuture.result();
         brokerSocket.write(sendBuffer);
         LOGGER.debug("Forwarded message to broker");
