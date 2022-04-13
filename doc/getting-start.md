@@ -50,7 +50,7 @@ mvn install
 ### 3. Configure the Kafka broker's listeners
 The address advertised by Kafka must be that of the proxy, not the broker itself.
 
-Modify the `advertised.listeners` property in `server.properties` to point to the proxy host and port, as shown in the snippet below:
+Modify the `advertised.listeners` property in `$KAFKA_HOME/config/server.properties` to point to the proxy host and port, as shown in the snippet below:
 
 ```
 # The address the socket server listens on. It will get the value returned from 
@@ -102,24 +102,24 @@ WARNING: sun.reflect.Reflection.getCallerClass is not supported. This will impac
 
 Now start the Kafka broker, for example:
 ```
-bin/kafka-server-start.sh config/server.properties 
+$KAFKA_HOME/bin/kafka-server-start.sh config/server.properties 
 ```
 
 ### 7. Run Kafka clients
 Start the Kafka console producer (note the proxy address in the broker list):
 
 ```
-bin/kafka-console-producer.sh  --broker-list localhost:1234 --topic enctest --producer.config config/producer.properties 
+$KAFKA_HOME/bin/kafka-console-producer.sh  --broker-list localhost:1234 --topic enctest --producer.config config/producer.properties 
 ```
 
 Start the Kafka console consumer, like the producer, specifying the proxy host and port:
 ```
-bin/kafka-console-consumer.sh --bootstrap-server localhost:1234 --consumer.config config/consumer.properties --topic enctest  --from-beginning
+$KAFKA_HOME/bin/kafka-console-consumer.sh --bootstrap-server localhost:1234 --consumer.config config/consumer.properties --topic enctest  --from-beginning
 ```
 
 Enter arbitry data in the producer and verify that it appears in consumer. 
 
 Inspect the topic segment files and verify they indeed are encrypted.
 ```
-hexdump /tmp/kafka-logs/enctest-0/00000000000000000000.log
+$KAFKA_HOME/kafka-dump-log.sh --files /tmp/kafka-logs/enctest-0/00000000000000000000.log --value-decoder-class kafka.serializer.StringDecoder
 ```
