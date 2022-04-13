@@ -2,7 +2,7 @@
 
 Requirements:
 - a Kafka instance, version 2.8.0 or older, which you can configure
-- Java 11
+- Java 17
 - Apache maven installed in your command line environment
 - git command
 
