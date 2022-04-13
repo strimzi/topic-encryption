@@ -67,7 +67,8 @@ public class EncryptionModule implements EncModControl {
         }
 		
 		if (encrypter == null) {
-		    // unencrypted topic.
+		    LOGGER.debug(
+		            "No encryption - topic {} is not configured for encryption",topicData.name());
 		    return false;
 		}
 
@@ -77,16 +78,16 @@ public class EncryptionModule implements EncModControl {
 			MemoryRecords recs = (MemoryRecords) partitionData.records();
 			// todo: note assumption of *memory* records
 			MemoryRecordsBuilder builder = createMemoryRecsBuilder(recs.buffer().capacity());
-			recs.records().forEach(r -> {
-				if (r.hasValue()) {
+			recs.records().forEach(record -> {
+				if (record.hasValue()) {
 					try {
 					    // encrypt record value:
-					    byte[] plaintext = new byte[r.valueSize()];
-					    r.value().get(plaintext);
+					    byte[] plaintext = new byte[record.valueSize()];
+					    record.value().get(plaintext);
 						EncData ciphertext = encrypter.encrypt(plaintext);
 						
-						// serialize the ciphertext and metadata into the builder:
-						encSerDer.serialize(builder, r, ciphertext);
+						// serialize the ciphertext and metadata, add to the builder:
+						encSerDer.serialize(builder, record, ciphertext);
 						
 					} catch (Exception e) {
 					    LOGGER.error("Error encrypting topic record for topic, " + topicData.name(), e);
@@ -111,7 +112,8 @@ public class EncryptionModule implements EncModControl {
         }
         
         if (encrypter == null) {
-            // unencrypted topic.
+            LOGGER.debug(
+                    "No decryption - topic {} is not configured for encryption", topicName);
             return false;
         }
 
@@ -132,11 +134,11 @@ public class EncryptionModule implements EncModControl {
                     createMemoryRecsBuilder(recs.sizeInBytes(),
                                             partitionData.currentLeader().leaderEpoch(),
                                             firstOffset);
-            recs.records().forEach(r -> {
-                if (r.hasValue()) {
+            recs.records().forEach(record -> {
+                if (record.hasValue()) {
                     try {
-                        byte[] ciphertext = new byte[r.valueSize()];
-                        r.value().get(ciphertext);
+                        byte[] ciphertext = new byte[record.valueSize()];
+                        record.value().get(ciphertext);
                         
                         // serialize value into version, iv, ciphertext:
                         EncData md = encSerDer.deserialize(ciphertext);
@@ -144,10 +146,10 @@ public class EncryptionModule implements EncModControl {
                         // decrypt, add to records builder:
                         byte[] plaintext = encrypter.decrypt(md);
                         
-                        SimpleRecord newRec = new SimpleRecord(r.timestamp(),
-                                                           r.key(),
+                        SimpleRecord newRec = new SimpleRecord(record.timestamp(),
+                                                           record.key(),
                                                            ByteBuffer.wrap(plaintext),
-                                                           r.headers());
+                                                           record.headers());
                         builder.append(newRec);
 
                     } catch (Exception e) {
@@ -163,6 +165,10 @@ public class EncryptionModule implements EncModControl {
         return true;
     }
 
+    /**
+     * EncMod control interface. Empty, placeholder implementation
+     * for the time being.
+     */
     @Override
 	public void purgeKey(String keyref) {
 	}
