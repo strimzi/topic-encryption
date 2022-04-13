@@ -28,7 +28,7 @@ The diagram below depicts the main components of the proposal, illustrating clie
 One core component, the _Encryption Module_, provides the encryption functionality. 
 A second core component, the _Proxy_, intercepts Kafka connections and delegates message processing to the Encryption Module.
 
-Topic can be encrypted by different keys, allowing brokers to store a mix of encrypted and unencrypted data, with data owners managing the keys to their topics. 
+Topics can be encrypted by different keys, allowing brokers to store a mix of encrypted and unencrypted data, with data owners managing the keys to their topics. 
 Keys will be stored in an external key management system with access policies and logging.
 
 We look forward to engaging with the Community in developing this exciting extension to Strimzi and Kafka!
