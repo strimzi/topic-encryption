@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.kafka.common.message.FetchResponseData;
 import org.apache.kafka.common.message.FetchResponseData.FetchableTopicResponse;
+import org.apache.kafka.common.message.ProduceRequestData.TopicProduceData;
 import org.apache.kafka.common.protocol.ApiKeys;
 import org.apache.kafka.common.requests.AbstractResponse;
 import org.apache.kafka.common.requests.FetchRequest;
@@ -211,16 +212,18 @@ public class MessageHandler implements Handler<Buffer> {
 
         // iterate over the request's partitions, passing them to the
         // encryption module where they are encrypted, if required.
-        AtomicInteger numEncryptions = new AtomicInteger(0);
-        req.data().topicData().forEach(topicData -> {
-          boolean isChanged = encMod.encrypt(topicData);
-          if (isChanged) {
-              numEncryptions.incrementAndGet();
-          }
-        });
+        int numEncryptions = 0;
+        if (req.data() != null && req.data().topicData() != null) {
+            for (TopicProduceData topicData : req.data().topicData()) {
+              boolean wasEncrypted = encMod.encrypt(topicData);
+              if (wasEncrypted) {
+                  numEncryptions++;
+              }
+            }
+        }
 
-        if (numEncryptions.get() == 0) {
-            // no encryptions performed, return original buffer
+        if (numEncryptions == 0) {
+            // no encryptions performed, return original buffer as-is
             return buffer;
         }
         // records were altered by encrypting. Serialize and return the modified message
