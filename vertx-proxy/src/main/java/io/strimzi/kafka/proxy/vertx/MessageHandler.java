@@ -33,7 +33,7 @@ import io.vertx.core.net.NetSocket;
 /**
  * Handles message flow between a single socket with a Kafka client
  * and a single socket to the broker.  As such, class variables are 
- * scoped this socket pair.
+ * scoped to a socket pair.
  * Global objects such as the Encryption Module are passed through the
  * vertx context argument to the constructor.
  */
@@ -150,7 +150,7 @@ public class MessageHandler implements Handler<Buffer> {
     /**
      * Inspects the incoming Kafka request message and dispatches it
      * depending on apikey (i.e., Kafka message type). If not a request
-     * type we are interested in, just returned the unaltered buffer
+     * type we are interested in, returns the unaltered buffer
      * so it is forwarded to the broker as-is.
      *
      * @param buffer
@@ -158,6 +158,7 @@ public class MessageHandler implements Handler<Buffer> {
      */
     public Buffer processRequest(Buffer buffer) {
         if (buffer.length() < 10) {
+            LOGGER.debug("processRequest():  buffer too small, ignoring.");
             return buffer;
         } 
         short apikey = MsgUtil.getApiKey(buffer);
@@ -244,10 +245,10 @@ public class MessageHandler implements Handler<Buffer> {
             fetchHeaderCache.put(req.getHeader().correlationId(),
                                  req.getHeader());
             
-            FetchRequest fetch = FetchRequest.parse(req.getPayload(),
-                    req.getHeader().apiVersion());
-            
             if (LOGGER.isDebugEnabled()) {
+                FetchRequest fetch = FetchRequest.parse(req.getPayload(),
+                        req.getHeader().apiVersion());
+
                 String msg = String.format("FETCH epoch = %04X, session = %04X",
                                 fetch.metadata().epoch(), fetch.metadata().sessionId());
                 LOGGER.debug(msg);
@@ -277,6 +278,10 @@ public class MessageHandler implements Handler<Buffer> {
             clientSocket.write(Buffer.buffer(0));
             return;
         }
+        if (brokerSocketFuture.failed()) {
+            LOGGER.error("broker connection failed", brokerSocketFuture.cause());
+            return;
+        }
         NetSocket brokerSocket = brokerSocketFuture.result();
         brokerSocket.write(sendBuffer);
         LOGGER.debug("Forwarded message to broker");
@@ -284,7 +289,7 @@ public class MessageHandler implements Handler<Buffer> {
 
     /**
      * This method is the handler for broker responses.
-     * We check response whether they match a cached Fetch request,
+     * We check responses as to whether they match a cached Fetch request,
      * based on correlation ID. If so, pass to the encryption module
      * to check whether decryption is needed.
      * 
@@ -332,7 +337,7 @@ public class MessageHandler implements Handler<Buffer> {
     
     /**
      * Fetch responses are processed here. We navigate the topic responses,
-     * passing to the encryption module which determines if they are to be encrypted. 
+     * passing to the encryption module which determines if they are to be decrypted. 
      *
      * @param buffer
      * @param reqHeader
@@ -351,15 +356,15 @@ public class MessageHandler implements Handler<Buffer> {
             return buffer;
         }
         List<FetchableTopicResponse> responses = data.responses();
-        AtomicInteger numDecryptions = new AtomicInteger(0);
+        int numDecryptions = 0;
         for (FetchableTopicResponse topicRsp : responses) {
             boolean wasDecrypted = encMod.decrypt(topicRsp);
             if (wasDecrypted) {
-                numDecryptions.incrementAndGet();
+                numDecryptions++;
             }
         }
         
-        if (numDecryptions.get() == 0) {
+        if (numDecryptions == 0) {
             // no decryptions were performed, return original buffer
             return buffer;
         } else {
