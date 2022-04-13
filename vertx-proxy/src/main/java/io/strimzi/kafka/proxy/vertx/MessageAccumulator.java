@@ -4,6 +4,9 @@
  */
 package io.strimzi.kafka.proxy.vertx;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.vertx.core.buffer.Buffer;
 
 /**
@@ -13,6 +16,8 @@ import io.vertx.core.buffer.Buffer;
  */
 public class MessageAccumulator {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(MessageAccumulator.class);
+
     Buffer buffer;
     
     public MessageAccumulator() {
@@ -20,7 +25,9 @@ public class MessageAccumulator {
     }
     
     public void append(Buffer buffer) {
-        LogUtils.hexDump("Msg append", buffer);
+        if (LOGGER.isDebugEnabled()) {
+            LogUtils.hexDump("Msg append", buffer);
+        }
         this.buffer.appendBuffer(buffer);
     }
  
