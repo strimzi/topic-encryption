@@ -17,9 +17,9 @@ public class Config {
         private PropertyNames() {}
     }
 	
-	String brokers;
-	PolicyRepository policyRepo;
-	int listeningPort;
+	private final String brokers;
+	private final PolicyRepository policyRepo;
+	private final int listeningPort;
 	
 	public Config (int listeningPort, String kafkaHostname, PolicyRepository policyRepo) {
 	    this.listeningPort = listeningPort;
