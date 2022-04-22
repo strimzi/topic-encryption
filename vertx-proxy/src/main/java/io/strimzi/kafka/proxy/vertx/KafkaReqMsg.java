@@ -14,8 +14,8 @@ public class KafkaReqMsg extends AbstractKafkaMsg {
 	
 	private final static int FIXED_HEADER_LEN = 10;
 
-	RequestHeader header;
-	byte[] headerBytes;
+	private RequestHeader header;
+	private byte[] headerBytes;
 	
 	public KafkaReqMsg(Buffer rawMsg) {
 	    super(rawMsg);
