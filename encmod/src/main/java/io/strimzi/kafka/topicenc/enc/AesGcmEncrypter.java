@@ -19,8 +19,8 @@ public class AesGcmEncrypter implements EncrypterDecrypter {
 	public static final int KEY_SIZE = 128; // for now
 	private static final String JCE_PROVIDER = "SunJCE"; // for now
 	
-	String transformation;
-	SecretKey key;
+	private final String transformation;
+	private final SecretKey key;
 	
 	public AesGcmEncrypter(SecretKey key) {
 		this.key = key;
