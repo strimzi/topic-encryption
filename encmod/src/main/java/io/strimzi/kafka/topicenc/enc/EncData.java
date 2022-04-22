@@ -10,8 +10,8 @@ package io.strimzi.kafka.topicenc.enc;
  * Other types of encrypted data classes are possible in the future.
  */
 public class EncData {
-	byte[] iv;         
-	byte[] ciphertext;
+	private final byte[] iv;         
+	private final byte[] ciphertext;
 	
 	public EncData(byte[] iv, byte[] ciphertext) {
 		this.iv = iv;
