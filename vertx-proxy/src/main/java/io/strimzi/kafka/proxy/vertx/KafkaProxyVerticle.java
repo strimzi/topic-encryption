@@ -28,8 +28,8 @@ public class KafkaProxyVerticle extends AbstractVerticle {
 	public static final String CTX_KEY_CONFIG = "topicenc.config";
 	public static final String CTX_KEY_ENCMOD = "topicenc.encmod";
 
-	Config config;
-	EncryptionModule encMod;
+	private Config config;
+	private EncryptionModule encMod;
 
 	@Override
 	public void init(Vertx vertx, Context context) {
