@@ -52,7 +52,7 @@ public class CryptoUtils {
 	
 	public static void logCiphers() {
 	    for (Provider provider : Security.getProviders()) {
-	        LOGGER.debug(provider.getName());
+	        LOGGER.debug("Cipher provider: {}", provider.getName());
 	        for (Map.Entry<Object, Object> entry : provider.entrySet()) {
 	            if (((String) entry.getValue()).contains("GCM")) {
 	                LOGGER.debug("key: [%s]  value: [%s]%n",
