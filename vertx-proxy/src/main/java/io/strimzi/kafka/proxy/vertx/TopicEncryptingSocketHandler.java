@@ -32,8 +32,6 @@ public class TopicEncryptingSocketHandler implements Handler<NetSocket> {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TopicEncryptingSocketHandler.class);
 	
 	Context context;
-	EncryptionModule encMod;
-	Config config;
 	Map<NetSocket, MessageHandler> activeHandlers = new HashMap<>();
 	
 	/**
@@ -44,11 +42,13 @@ public class TopicEncryptingSocketHandler implements Handler<NetSocket> {
 	public TopicEncryptingSocketHandler(Context context) {
 		//super();
 		this.context = context;
-    	this.encMod = context.get(KafkaProxyVerticle.CTX_KEY_ENCMOD);
+		
+		// validate context contents at this early stage:
+		EncryptionModule encMod = context.get(KafkaProxyVerticle.CTX_KEY_ENCMOD);
     	if (Objects.isNull(encMod)) {
     		throw new NullPointerException("No encryption module");
     	}
-    	this.config = context.get(KafkaProxyVerticle.CTX_KEY_CONFIG);    	
+    	Config config = context.get(KafkaProxyVerticle.CTX_KEY_CONFIG);    	
         if (Objects.isNull(config)) {
             throw new NullPointerException("No config object"); 
         }
@@ -66,6 +66,7 @@ public class TopicEncryptingSocketHandler implements Handler<NetSocket> {
 	    activeHandlers.put(clientSocket, msgHandler);
 
 	    // assign the socket's handlers, most notably the msgHandler
+	    clientSocket.pause();
 		clientSocket
 		  .handler(msgHandler)
 		  .exceptionHandler(e -> {
@@ -79,6 +80,7 @@ public class TopicEncryptingSocketHandler implements Handler<NetSocket> {
 		        h.close();
 		    }
 		   });
+		clientSocket.resume();
 	}
 }
 	
