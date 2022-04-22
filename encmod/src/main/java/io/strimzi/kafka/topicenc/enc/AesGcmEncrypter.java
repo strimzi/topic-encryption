@@ -4,13 +4,9 @@
  */
 package io.strimzi.kafka.topicenc.enc;
 
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
+import java.security.GeneralSecurityException;
 
 import javax.crypto.Cipher;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 
@@ -32,47 +28,43 @@ public class AesGcmEncrypter implements EncrypterDecrypter {
 	}
 	
 	@Override
-	public EncData encrypt(byte[] plaintext) throws Exception {
+	public EncData encrypt(byte[] plaintext) throws GeneralSecurityException {
 		byte[] iv = CryptoUtils.createRandom(IV_SIZE);
 		return encrypt(plaintext, iv);
 	}
 
 	@Override
-	public EncData encrypt(byte[] plaintext, byte[] iv) throws Exception {
+	public EncData encrypt(byte[] plaintext, byte[] iv) throws GeneralSecurityException {
 		Cipher encCipher = createEncryptionCipher(transformation, key, iv);
 		byte[] ciphertext = encCipher.doFinal(plaintext);
 		return new EncData(iv, ciphertext);
 	}
 
 	@Override
-	public byte[] decrypt(EncData encData) throws Exception {
+	public byte[] decrypt(EncData encData) throws GeneralSecurityException {
 		// every encryption assumed to have its own IV
 		Cipher decCipher = createDecryptionCipher(transformation, key, encData.getIv());
 		return decCipher.doFinal(encData.getCiphertext());
 	}
 	
 	private static Cipher createEncryptionCipher(String transformation, SecretKey key, byte[] iv) 
-			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, NoSuchProviderException
-	{
+			throws GeneralSecurityException {
 		return createCipher(Cipher.ENCRYPT_MODE, transformation, key, iv);
 	}
 	
 	private static Cipher createDecryptionCipher(String transformation, SecretKey key, byte[] iv) 
-			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, NoSuchProviderException
-	{
+			throws GeneralSecurityException {
 		return createCipher(Cipher.DECRYPT_MODE, transformation, key, iv);
 	}
 
 	private static Cipher createCipher(int mode, String transformation, SecretKey key, byte[] iv) 
-			throws NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException, NoSuchProviderException
-	{
+			throws GeneralSecurityException {
+	    if (iv == null || iv.length == 0) {
+	        throw new GeneralSecurityException("Initialization vector either null or empty.");
+	    }
 		Cipher cipher = Cipher.getInstance(transformation, JCE_PROVIDER); 
-		if (iv != null && iv.length > 0) {
-			GCMParameterSpec gcmSpec = new GCMParameterSpec(KEY_SIZE, iv);
-			cipher.init(mode, key, gcmSpec);
-		} else {
-			cipher.init(mode, key);
-		}
+		GCMParameterSpec gcmSpec = new GCMParameterSpec(KEY_SIZE, iv);
+		cipher.init(mode, key, gcmSpec);
         return cipher;
 	}	
 }
