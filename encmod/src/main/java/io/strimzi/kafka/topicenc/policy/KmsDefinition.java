@@ -8,12 +8,12 @@ import java.net.URL;
 
 public class KmsDefinition {
 	
-	URL url;
-	String name;
-	String instance;
-	String description;
-	String type;
-	String credential;
+	private URL url;
+	private String name;
+	private String instance;
+	private String description;
+	private String type;
+	private String credential;
 	
 	public URL getUrl() {
 		return url;
