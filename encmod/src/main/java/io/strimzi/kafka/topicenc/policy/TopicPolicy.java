@@ -6,11 +6,11 @@ package io.strimzi.kafka.topicenc.policy;
 
 public class TopicPolicy {
 
-	String topic;
-	String encMethod;
-	String keyReference;
-	KmsDefinition kms;
-	String credential;
+	private String topic;
+	private String encMethod;
+	private String keyReference;
+	private KmsDefinition kms;
+	private String credential;
 	
 	public String getTopic() {
 		return topic;
