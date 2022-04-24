@@ -4,11 +4,11 @@
  */
 package io.strimzi.kafka.proxy.vertx;
 
+import java.security.GeneralSecurityException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.kafka.common.message.FetchResponseData;
 import org.apache.kafka.common.message.FetchResponseData.FetchableTopicResponse;
@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.strimzi.kafka.topicenc.EncryptionModule;
+import io.strimzi.kafka.topicenc.ser.EncSerDerException;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -60,6 +61,7 @@ public class MessageHandler implements Handler<Buffer> {
     public MessageHandler(Context context, NetSocket clientSocket) {
         this.context = context;
         this.clientSocket = clientSocket;
+        //clientSocket.pause();
         
         this.config = context.get(KafkaProxyVerticle.CTX_KEY_CONFIG);       
         if (Objects.isNull(config)) {
@@ -71,7 +73,12 @@ public class MessageHandler implements Handler<Buffer> {
             throw new NullPointerException("No encryption module");
         }
 
-        // open, initialize the connection to the broker.
+        connectToBroker(clientSocket);
+        LOGGER.info("MessageHandler created {}", brokerSocketFuture.isComplete());
+    }
+    
+    private void connectToBroker(NetSocket clientSocket) {
+        
         this.brokerClient = context.owner().createNetClient();
         String broker = config.kafkaHostname();
         String[] tokens = broker.split(":");
@@ -80,15 +87,33 @@ public class MessageHandler implements Handler<Buffer> {
         }
         int port = Integer.valueOf(tokens[1]);
         String hostname = tokens[0];
-        this.brokerSocketFuture = brokerClient.connect(port, hostname);
-        brokerSocketFuture
-             .onSuccess(h -> {
-                 LOGGER.debug("brokerSocketFuture success");
-                 h.handler(buffer -> processBrokerResponse(buffer));
-              })
-             .onFailure(e -> LOGGER.debug("Error connecting to broker", e))
-             .onComplete(h -> LOGGER.debug("brokerSocketFuture complete"));
-        LOGGER.info("MessageHandler created");
+        
+        // open connection in a thread and then wait later
+        //CompletableFuture c = CompletableFuture.
+        //context.executeBlocking(fut -> {
+        LOGGER.debug("Connecting to broker {}", broker);
+            this.brokerSocketFuture = brokerClient.connect(port, hostname);
+            brokerSocketFuture
+                 .onSuccess(socket -> {
+                     LOGGER.debug("broker connected. Thread = {}", Thread.currentThread().getName());
+                     socket
+                      .handler(buffer -> {
+                        try {
+                            processBrokerResponse(buffer);
+                        } catch (EncSerDerException | GeneralSecurityException e) {
+                            LOGGER.error("Error decrypting broker response", e);
+                            // to do: forward error msg to client
+                        }
+                    })
+                      .closeHandler(brokerClose -> {
+                             LOGGER.debug("connection closed by broker");
+                             clientSocket.close();
+                     //clientSocket.resume();
+                   });
+                  })
+                 .onFailure(e -> {
+                     LOGGER.debug("Error connecting to broker", e);
+                  });
     }
     
     /**
@@ -142,7 +167,14 @@ public class MessageHandler implements Handler<Buffer> {
         }
         
         // We have a complete kafka msg - process it, forward to broker
-        Buffer sendBuffer = processRequest(currClientReq.getBuffer());
+        Buffer sendBuffer = null;
+        try {
+            processRequest(currClientReq.getBuffer());
+        } catch (EncSerDerException | GeneralSecurityException e) {
+            LOGGER.error("Encryption error processing request", e);
+            // send back Kafka error msg
+            return;
+        }
         currClientReq.reset();
         forwardToBroker(sendBuffer);
     } 
@@ -155,8 +187,10 @@ public class MessageHandler implements Handler<Buffer> {
      *
      * @param buffer
      * @return
+     * @throws GeneralSecurityException 
+     * @throws EncSerDerException 
      */
-    public Buffer processRequest(Buffer buffer) {
+    public Buffer processRequest(Buffer buffer) throws EncSerDerException, GeneralSecurityException {
         if (buffer.length() < 10) {
             LOGGER.debug("processRequest():  buffer too small, ignoring.");
             return buffer;
@@ -166,8 +200,10 @@ public class MessageHandler implements Handler<Buffer> {
         if (LOGGER.isDebugEnabled()) {
             int corrId = MsgUtil.getReqCorrId(buffer);
             String apikeyName = ApiKeys.forId(apikey).name();
-            LOGGER.debug("Request rcvd, apikey = {}, corrid = {}, socket = {}", 
-                         apikeyName, corrId, clientSocket.remoteAddress().toString());
+            LOGGER.debug("Request: apikey = {}, corrid = {}, socket = {}", 
+                         apikeyName, corrId,
+                         clientSocket == null ? "null" :
+                         clientSocket.remoteAddress().toString());
         }
         // dispatch based on apikey.Currently PRODUCE and FETCH only
         if (apikey == ApiKeys.PRODUCE.id) {
@@ -188,8 +224,11 @@ public class MessageHandler implements Handler<Buffer> {
      *
      * @param kafkaMsg
      * @return
+     * @throws GeneralSecurityException 
+     * @throws EncSerDerException 
      */
-    public Buffer processProduceRequest(Buffer buffer) {
+    public Buffer processProduceRequest(Buffer buffer) 
+            throws EncSerDerException, GeneralSecurityException {
 
         if (LOGGER.isDebugEnabled()) {
             LogUtils.hexDump("client->proxy: PRODUCE request", buffer);
@@ -272,10 +311,10 @@ public class MessageHandler implements Handler<Buffer> {
     private void forwardToBroker(Buffer sendBuffer) {
 
         if (!brokerSocketFuture.isComplete()) {
-            LOGGER.info("broker socket not ready");
+            LOGGER.info("broker socket not ready. Thread = {}", Thread.currentThread().getName());
             // broker socket not ready. Return an empty buffer to get off the thread.
             // This is a hack ... must find a better way to handle this.
-            clientSocket.write(Buffer.buffer(0));
+            //clientSocket.write(Buffer.buffer(0));
             return;
         }
         if (brokerSocketFuture.failed()) {
@@ -294,8 +333,11 @@ public class MessageHandler implements Handler<Buffer> {
      * to check whether decryption is needed.
      * 
      * @param brokerRsp
+     * @throws GeneralSecurityException 
+     * @throws EncSerDerException 
      */
-    public void processBrokerResponse(Buffer brokerRsp) {
+    public void processBrokerResponse(Buffer brokerRsp) 
+            throws EncSerDerException, GeneralSecurityException {
         // accumulate message fragments
         currBrokerRsp.append(brokerRsp);
         if (!currBrokerRsp.isComplete()) {
@@ -342,9 +384,11 @@ public class MessageHandler implements Handler<Buffer> {
      * @param buffer
      * @param reqHeader
      * @return
+     * @throws GeneralSecurityException 
+     * @throws EncSerDerException 
      */
-    public Buffer processFetchResponse(Buffer buffer, RequestHeader reqHeader) {
-
+    public Buffer processFetchResponse(Buffer buffer, RequestHeader reqHeader)
+            throws EncSerDerException, GeneralSecurityException {
         // instantiate FetchResponse instance
         KafkaRspMsg rsp = new KafkaRspMsg(buffer, reqHeader.apiVersion());
         FetchResponse<?> fetch = 
