@@ -13,11 +13,6 @@ public class LogUtils {
     
     private static final String MID_COLUMN = "   ";
 
-	
-	public static void hexDump(String title, io.vertx.rxjava3.core.buffer.Buffer buffer) {
-		hexDump(title, buffer.getBytes());
-	}
-	
 	public static void hexDump(String title, Buffer buffer) {
 		hexDump(title, buffer.getBytes());
 	}
