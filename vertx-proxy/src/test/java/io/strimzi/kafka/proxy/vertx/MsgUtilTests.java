@@ -9,16 +9,15 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.apache.kafka.common.protocol.ApiKeys;
-import org.junit.jupiter.api.Test;
+import org.junit.Assert;
+import org.junit.Test;
 
 import io.vertx.core.buffer.Buffer;
 
-import org.junit.Assert;
-
-class MsgUtilTests {
+public class MsgUtilTests {
     
     @Test
-    void testMsgUtil() throws FileNotFoundException, IOException {
+    public void testMsgUtil() throws FileNotFoundException, IOException {
         
         // produce request
         File testDataFile = new File("src/test/resources/produce_request.hex");
