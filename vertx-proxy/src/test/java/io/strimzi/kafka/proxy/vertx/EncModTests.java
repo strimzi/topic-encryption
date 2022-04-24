@@ -6,6 +6,7 @@ package io.strimzi.kafka.proxy.vertx;
 
 import java.io.File;
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
@@ -19,14 +20,15 @@ import org.apache.kafka.common.requests.FetchResponse;
 import org.apache.kafka.common.requests.RequestHeader;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import io.strimzi.kafka.topicenc.EncryptionModule;
 import io.strimzi.kafka.topicenc.kms.TestKms;
 import io.strimzi.kafka.topicenc.policy.TestPolicyRepo;
+import io.strimzi.kafka.topicenc.ser.EncSerDerException;
 import io.vertx.core.buffer.Buffer;
 
-class EncModTests {
+public class EncModTests {
 
     EncryptionModule encMod;
     Config dummyConfig;
@@ -36,7 +38,7 @@ class EncModTests {
     }
 
     @Test
-    void testEncryption() throws IOException, NoSuchAlgorithmException {
+    public void testEncryption() throws IOException, NoSuchAlgorithmException {
         encMod = new EncryptionModule(new TestPolicyRepo(), new TestKms());
         dummyConfig = new Config(0, "localhost",null);
         var handler = new MessageHandler(encMod, dummyConfig);
@@ -46,13 +48,19 @@ class EncModTests {
         
         var reqBuf = Buffer.buffer(prodReq);
 
-        Buffer sendBuf = handler.processProduceRequest(reqBuf);
-        boolean equal = Arrays.equals(prodReq, sendBuf.getBytes());
-        Assert.assertFalse("Message was not encrypted", equal);
+        try {
+            Buffer sendBuf = handler.processProduceRequest(reqBuf);
+            boolean equal = Arrays.equals(prodReq, sendBuf.getBytes());
+            Assert.assertFalse("Message was not encrypted", equal);
+            
+        } catch (EncSerDerException | GeneralSecurityException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
     
     @Test
-    void testDecryption() throws IOException, NoSuchAlgorithmException {
+    public void testDecryption() throws IOException, NoSuchAlgorithmException {
         testDecryption(new File("src/test/resources/fetch_response.hex"));
         testDecryption(new File("src/test/resources/fetch_multi_response.hex"));
     }
@@ -70,7 +78,14 @@ class EncModTests {
         var reqHeader = new RequestHeader(ApiKeys.FETCH, (short) 12, "console-producer", corrId);
         
         // decrypt:
-        Buffer fetchRspBuf = handler.processFetchResponse(rspBuf, reqHeader);
+        Buffer fetchRspBuf;
+        try {
+            fetchRspBuf = handler.processFetchResponse(rspBuf, reqHeader);
+        } catch (EncSerDerException | GeneralSecurityException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return;
+        }
         LogUtils.hexDump("FETCH response decrypted", fetchRspBuf);
         
         // instantiate the decrypted fetch response
