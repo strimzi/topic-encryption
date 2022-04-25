@@ -15,9 +15,9 @@ public class KafkaRspMsg extends AbstractKafkaMsg {
 	
 	private final static int FIXED_HEADER_LEN = 4;
 
-	ResponseHeader header;
-	byte[] headerBytes;
-	short version;
+	private ResponseHeader header;
+	private byte[] headerBytes;
+	private final short version;
 	
 	public KafkaRspMsg(Buffer rawMsg, short version) {
 	    super(rawMsg);

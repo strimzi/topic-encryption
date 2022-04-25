@@ -18,7 +18,7 @@ public class MessageAccumulator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageAccumulator.class);
 
-    Buffer buffer;
+    private Buffer buffer;
     
     public MessageAccumulator() {
         buffer = Buffer.buffer(0);
