@@ -40,3 +40,4 @@ classes/
 
 # config files
 vertx-proxy/src/main/resources/config.json
+
