@@ -6,26 +6,17 @@
 
 
 The goal of this project is to provide proxy-based, topic-level encryption-at-rest for [Apache Kafka®](https://kafka.apache.org/).  
-To learn more about the background and architecture of topic encryption, see our [overview document](doc/README.md).
 
-The next planned milestones in the project are:
+### Documentation
+To learn more about the background and architecture of topic encryption, see our [overview document](doc/README.md). 
 
-## M1, May 14: Foundation
-- Technical specification of the project
-- Assessment of viable proxy 
-  - Envoy vs. a custom-developed proxy (in golang or Java)
+The [getting started guide](doc/getting-started.md) explains how to compile and run the encrypting proxy for testing and evaluation.
 
-## M2, June 04: Alpha proxy
-- Initial implementation of selected proxy architecture
-  - stand-alone, not yet integrated
+### Project structure
+The project consists of two nested projects:
+- [encmod](encmod/),  the topic encryption module
+- [vertx-proxy](vertx-proxy/), an experimental Kafka proxy for developing and testing the encryption module. 
 
-## M3, June 18: Proxy integration evaluation
-- First version of the software encryption module
-- Integration of encryption module with proxy
-- Evaluation of proxy integration into Strimzi and build environment
 
-## M4, July 02: Alpha Strimzi integration
-- Integrate proxy with the Strimzi project
-- Integrate encryption module
 
 
