@@ -42,15 +42,15 @@ public class MessageHandler implements Handler<Buffer> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageHandler.class);
 
-    Context context;
-    Config config;
-    EncryptionModule encMod;
-    NetSocket clientSocket;
-    NetClient brokerClient;
-    Future<NetSocket> brokerSocketFuture;
-    Map<Integer, RequestHeader> fetchHeaderCache = new HashMap<>();
-    MessageAccumulator currBrokerRsp = new MessageAccumulator();
-    MessageAccumulator currClientReq = new MessageAccumulator();
+    private Context context;
+    private final Config config;
+    private final EncryptionModule encMod;
+    private NetSocket clientSocket;
+    private NetClient brokerClient;
+    private Future<NetSocket> brokerSocketFuture;
+    private Map<Integer, RequestHeader> fetchHeaderCache = new HashMap<>();
+    private MessageAccumulator currBrokerRsp = new MessageAccumulator();
+    private MessageAccumulator currClientReq = new MessageAccumulator();
 
     /**
      * The real constructor, as opposed to the test constructor.

@@ -31,8 +31,8 @@ public class TopicEncryptingSocketHandler implements Handler<NetSocket> {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(TopicEncryptingSocketHandler.class);
 	
-	Context context;
-	Map<NetSocket, MessageHandler> activeHandlers = new HashMap<>();
+	final Context context;
+	final Map<NetSocket, MessageHandler> activeHandlers = new HashMap<>();
 	
 	/**
 	 * Constructor. The handler retrieves config and enccryption module
