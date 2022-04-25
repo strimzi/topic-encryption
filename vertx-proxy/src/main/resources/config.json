@@ -1,0 +1,5 @@
+{
+  "listening_port" : 1234,
+  "kafka_broker"   : "localhost:9092",
+  "policy_repo"    : "test"
+}
