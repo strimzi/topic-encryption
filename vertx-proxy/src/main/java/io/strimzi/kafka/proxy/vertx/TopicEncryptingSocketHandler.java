@@ -32,10 +32,10 @@ public class TopicEncryptingSocketHandler implements Handler<NetSocket> {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TopicEncryptingSocketHandler.class);
 	
 	final Context context;
-	final Map<NetSocket, MessageHandler> activeHandlers = new HashMap<>();
+	final Map<NetSocket, MessageHandler> activeHandlers = new HashMap<>(); // concurrent map?
 	
 	/**
-	 * Constructor. The handler retrieves config and enccryption module
+	 * Constructor. The handler retrieves config and encryption module
 	 * instances from the provided context.
 	 * @param context
 	 */
@@ -65,22 +65,24 @@ public class TopicEncryptingSocketHandler implements Handler<NetSocket> {
 	    MessageHandler msgHandler = new MessageHandler(context, clientSocket);
 	    activeHandlers.put(clientSocket, msgHandler);
 
-	    // assign the socket's handlers, most notably the msgHandler
+	    // pause until the chain of handlers is set up. client is resumed
+	    // in messagehandler.
 	    clientSocket.pause();
-		clientSocket
+
+	    // assign the socket's handlers, most notably the msgHandler
+	    clientSocket
 		  .handler(msgHandler)
 		  .exceptionHandler(e -> {
-		      LOGGER.info("Client socket exception: {}",e);}
-		   )
+		      LOGGER.info("Client socket exception: {}",e);
+		      // handling?
+		   })
 		  .closeHandler(x -> { 
 		    LOGGER.info("Client socket closed: {} ", clientSocket.remoteAddress().toString());
-		    // activeHandlers should be concurrent map
 		    MessageHandler h = activeHandlers.remove(clientSocket);
 		    if (h != null) {
 		        h.close();
 		    }
 		   });
-		clientSocket.resume();
 	}
 }
 	

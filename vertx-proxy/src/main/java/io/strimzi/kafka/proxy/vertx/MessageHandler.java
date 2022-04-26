@@ -61,7 +61,6 @@ public class MessageHandler implements Handler<Buffer> {
     public MessageHandler(Context context, NetSocket clientSocket) {
         this.context = context;
         this.clientSocket = clientSocket;
-        //clientSocket.pause();
         
         this.config = context.get(KafkaProxyVerticle.CTX_KEY_CONFIG);       
         if (Objects.isNull(config)) {
@@ -75,45 +74,6 @@ public class MessageHandler implements Handler<Buffer> {
 
         connectToBroker(clientSocket);
         LOGGER.info("MessageHandler created {}", brokerSocketFuture.isComplete());
-    }
-    
-    private void connectToBroker(NetSocket clientSocket) {
-        
-        this.brokerClient = context.owner().createNetClient();
-        String broker = config.kafkaHostname();
-        String[] tokens = broker.split(":");
-        if (tokens == null || tokens.length != 2) {
-            throw new IllegalArgumentException("Broker must be specified as 'hostname:port'");
-        }
-        int port = Integer.valueOf(tokens[1]);
-        String hostname = tokens[0];
-        
-        // open connection in a thread and then wait later
-        //CompletableFuture c = CompletableFuture.
-        //context.executeBlocking(fut -> {
-        LOGGER.debug("Connecting to broker {}", broker);
-            this.brokerSocketFuture = brokerClient.connect(port, hostname);
-            brokerSocketFuture
-                 .onSuccess(socket -> {
-                     LOGGER.debug("broker connected. Thread = {}", Thread.currentThread().getName());
-                     socket
-                      .handler(buffer -> {
-                        try {
-                            processBrokerResponse(buffer);
-                        } catch (EncSerDerException | GeneralSecurityException e) {
-                            LOGGER.error("Error decrypting broker response", e);
-                            // to do: forward error msg to client
-                        }
-                    })
-                      .closeHandler(brokerClose -> {
-                             LOGGER.debug("connection closed by broker");
-                             clientSocket.close();
-                     //clientSocket.resume();
-                   });
-                  })
-                 .onFailure(e -> {
-                     LOGGER.debug("Error connecting to broker", e);
-                  });
     }
     
     /**
@@ -134,18 +94,21 @@ public class MessageHandler implements Handler<Buffer> {
     /**
      * Close and clear resources so the message handler does not hang
      * around the heap after the client socket has been closed.
+     * To do: set state machine to closing
      */
     public void close() {
-        LOGGER.debug("Closing Message Handler");
+        LOGGER.debug("Closing MessageHandler");
+        if (brokerSocketFuture != null) {
+            NetSocket brokerSocket = brokerSocketFuture.result();
+            if (brokerSocket != null) {
+                brokerSocket.close();
+            }
+            brokerSocketFuture = null;
+        }
         clientSocket = null;
         context = null;
         fetchHeaderCache.clear();
         fetchHeaderCache = null;
-        NetSocket brokerSocket = brokerSocketFuture.result();
-        if (brokerSocket != null) {
-            brokerSocket.close();
-        }
-        brokerSocketFuture = null;
     }
 
     /**
@@ -169,13 +132,14 @@ public class MessageHandler implements Handler<Buffer> {
         // We have a complete kafka msg - process it, forward to broker
         Buffer sendBuffer = null;
         try {
-            processRequest(currClientReq.getBuffer());
+            sendBuffer = processRequest(currClientReq.getBuffer());
         } catch (EncSerDerException | GeneralSecurityException e) {
             LOGGER.error("Encryption error processing request", e);
-            // send back Kafka error msg
+            // to do: send back Kafka error msg
             return;
+        } finally {
+            currClientReq.reset();
         }
-        currClientReq.reset();
         forwardToBroker(sendBuffer);
     } 
     
@@ -190,7 +154,8 @@ public class MessageHandler implements Handler<Buffer> {
      * @throws GeneralSecurityException 
      * @throws EncSerDerException 
      */
-    public Buffer processRequest(Buffer buffer) throws EncSerDerException, GeneralSecurityException {
+    public Buffer processRequest(Buffer buffer)
+            throws EncSerDerException, GeneralSecurityException {
         if (buffer.length() < 10) {
             LOGGER.debug("processRequest():  buffer too small, ignoring.");
             return buffer;
@@ -251,7 +216,7 @@ public class MessageHandler implements Handler<Buffer> {
                                                   kafkaMsg.getHeader().apiVersion());
 
         // iterate over the request's partitions, passing them to the
-        // encryption module where they are encrypted, if required.
+        // encryption module where they are assessed for encryptopn.
         int numEncryptions = 0;
         if (req.data() != null && req.data().topicData() != null) {
             for (TopicProduceData topicData : req.data().topicData()) {
@@ -266,7 +231,7 @@ public class MessageHandler implements Handler<Buffer> {
             // no encryptions performed, return original buffer as-is
             return buffer;
         }
-        // records were altered by encrypting. Serialize and return the modified message
+        // records were altered by encryption. Serialize and return the modified message
         return MsgUtil.toSendBuffer(kafkaMsg.getHeaderBytes(), req);
     }
     
@@ -309,6 +274,11 @@ public class MessageHandler implements Handler<Buffer> {
      * @param sendBuffer
      */
     private void forwardToBroker(Buffer sendBuffer) {
+        
+        if (sendBuffer == null || sendBuffer.length() == 0) {
+            LOGGER.debug("forwardToBroker(): empty send Buffer");
+            return;
+        }
 
         if (!brokerSocketFuture.isComplete()) {
             LOGGER.info("broker socket not ready. Thread = {}", Thread.currentThread().getName());
@@ -338,6 +308,7 @@ public class MessageHandler implements Handler<Buffer> {
      */
     public void processBrokerResponse(Buffer brokerRsp) 
             throws EncSerDerException, GeneralSecurityException {
+        
         // accumulate message fragments
         currBrokerRsp.append(brokerRsp);
         if (!currBrokerRsp.isComplete()) {
@@ -355,7 +326,7 @@ public class MessageHandler implements Handler<Buffer> {
                 LOGGER.debug("Broker response matches cached FETCH req header corrId={}", corrId);
                 fetchHeaderCache.remove(corrId);
                 
-                // processFetchResponse calls enc module for decryption:
+                // call enc module for decryption:
                 brokerRspMsg = processFetchResponse(brokerRspMsg, reqHeader);
             }
         }
@@ -368,8 +339,10 @@ public class MessageHandler implements Handler<Buffer> {
         final Buffer rspBuf = brokerRspMsg;
         writeFuture.onSuccess(h -> {
             if (LOGGER.isDebugEnabled()) {
-                String msg = String.format("proxy->client: broker response corrId=%d (%02X), thread = %s, socket=%s",
-                        corrId, corrId, Thread.currentThread().getName(), clientSocket.remoteAddress().toString());
+                String msg = String.format(
+                        "proxy->client: broker response corrId=%d (%02X), thread = %s, socket=%s",
+                        corrId, corrId, Thread.currentThread().getName(),
+                        clientSocket.remoteAddress().toString());
                 LogUtils.hexDump(msg, rspBuf);
             }
         });
@@ -416,4 +389,51 @@ public class MessageHandler implements Handler<Buffer> {
             return MsgUtil.toSendBuffer(fetch, reqHeader);
         }
     }
+    
+    /**
+     * Given a socket from a Kafka client, open and initialize a corresponding
+     * socket to the broker.
+     *
+     * @param clientSocket
+     */
+    private void connectToBroker(NetSocket clientSocket) {
+        
+        this.brokerClient = context.owner().createNetClient();
+        String broker = config.kafkaHostname();
+        String[] tokens = broker.split(":");
+        if (tokens == null || tokens.length != 2) {
+            throw new IllegalArgumentException("Broker must be specified as 'hostname:port'");
+        }
+        int port = Integer.valueOf(tokens[1]);
+        String hostname = tokens[0];
+        
+        // open connection in a thread and then wait later
+        LOGGER.debug("Connecting to broker {}", broker);
+        this.brokerSocketFuture = brokerClient.connect(port, hostname);
+        brokerSocketFuture
+             .onSuccess(socket -> {
+                 LOGGER.debug("broker connected. Thread = {}", Thread.currentThread().getName());
+                 clientSocket.resume();
+                 socket
+                  .handler(buffer -> {
+                    try {
+                        processBrokerResponse(buffer);
+                    } catch (EncSerDerException | GeneralSecurityException e) {
+                        LOGGER.error("Error decrypting broker response", e);
+                        // to do: forward error to client
+                    }
+                   })
+                  .closeHandler(brokerClose -> {
+                         LOGGER.debug("Broker connection closed");
+                         if (clientSocket != null) {
+                             clientSocket.close();
+                         }
+                   });
+              })
+             .onFailure(e -> {
+                 LOGGER.debug("Error connecting to broker", e);
+                 // to do: return error to client
+              });
+    }
+    
 }
