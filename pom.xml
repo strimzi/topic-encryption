@@ -35,6 +35,12 @@
             <organization>IBM Research - Zurich</organization>
             <organizationUrl>https://www.zurich.ibm.com/</organizationUrl>
         </developer>
+        <developer>
+            <name>Tom Bentley</name>
+            <email>tbentley@redhat.com</email>
+            <organization>Red Hat</organization>
+            <organizationUrl>https://www.redhat.com</organizationUrl>
+        </developer>
     </developers>
 
     <properties>
