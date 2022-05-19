@@ -35,6 +35,15 @@ target/
 bin/
 classes/
 
+# intellij idea specific
+.idea/
+*.iml
+
+# vs code
+.factorypath
+.vscode/
+.history/
+
 # MacOS
 .DS_Store
 
