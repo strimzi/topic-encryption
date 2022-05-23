@@ -117,24 +117,23 @@ public class MessageHandler implements Handler<Buffer> {
         LOGGER.debug("Request buffer from client arrived");
         currClientReq.append(buffer);
 
-        boolean isComplete = currClientReq.isComplete();
-        LOGGER.debug("Kafka msg complete {}", isComplete);
-        if (!isComplete) {
+        List<Buffer> sendBuffers = currClientReq.take();
+        LOGGER.debug("Number of complete Kafka msgs: {}", sendBuffers.size());
+        if (sendBuffers.isEmpty()) {
             return;
         }
 
-        // We have a complete kafka msg - process it, forward to broker
-        Buffer sendBuffer = null;
-        try {
-            sendBuffer = processRequest(currClientReq.getBuffer());
-        } catch (EncSerDerException | GeneralSecurityException e) {
-            LOGGER.error("Encryption error processing request", e);
-            // to do: send back Kafka error msg
-            return;
-        } finally {
-            currClientReq.reset();
+        for (Buffer sendBuffer : sendBuffers) {
+            // We have a complete kafka msg - process it, forward to broker
+            try {
+                sendBuffer = processRequest(sendBuffer);
+            } catch (EncSerDerException | GeneralSecurityException e) {
+                LOGGER.error("Encryption error processing request", e);
+                // to do: send back Kafka error msg
+                return;
+            }
+            forwardToBroker(sendBuffer);
         }
-        forwardToBroker(sendBuffer);
     }
 
     /**
@@ -297,43 +296,43 @@ public class MessageHandler implements Handler<Buffer> {
 
         // accumulate message fragments
         currBrokerRsp.append(brokerRsp);
-        if (!currBrokerRsp.isComplete()) {
+
+        List<Buffer> brokerRspMsgs = currBrokerRsp.take();
+        if (brokerRspMsgs.isEmpty()) {
             return;
         }
 
-        // if this far, we have a complete message. process it.
-        Buffer brokerRspMsg = currBrokerRsp.getBuffer();
+        // process all the messages returned by the accumulator
+        for (Buffer brokerRspMsg : brokerRspMsgs) {
+            int corrId = MsgUtil.getRspCorrId(brokerRspMsg);
+            if (corrId != -1) {
+                RequestHeader reqHeader = fetchHeaderCache.get(corrId);
+                if (reqHeader != null) {
+                    // The response matches a recently cached fetch request.
+                    LOGGER.debug("Broker response matches cached FETCH req header corrId={}", corrId);
+                    fetchHeaderCache.remove(corrId);
 
-        int corrId = MsgUtil.getRspCorrId(brokerRspMsg);
-        if (corrId != -1) {
-            RequestHeader reqHeader = fetchHeaderCache.get(corrId);
-            if (reqHeader != null) {
-                // The response matches a recently cached fetch request.
-                LOGGER.debug("Broker response matches cached FETCH req header corrId={}", corrId);
-                fetchHeaderCache.remove(corrId);
-
-                // call enc module for decryption:
-                brokerRspMsg = processFetchResponse(brokerRspMsg, reqHeader);
+                    // call enc module for decryption:
+                    brokerRspMsg = processFetchResponse(brokerRspMsg, reqHeader);
+                }
             }
+
+            // Finished with broker response processing.
+            // Forward to the Kafka client.
+            Future<Void> writeFuture = clientSocket.write(brokerRspMsg);
+
+            // logging:
+            final Buffer rspBuf = brokerRspMsg;
+            writeFuture.onSuccess(h -> {
+                if (LOGGER.isDebugEnabled()) {
+                    String msg = String.format(
+                            "proxy->client: broker response corrId=%d (%02X), thread = %s, socket=%s",
+                            corrId, corrId, Thread.currentThread().getName(),
+                            clientSocket.remoteAddress().toString());
+                    LogUtils.hexDump(msg, rspBuf);
+                }
+            });
         }
-
-        // Finished with broker response processing.
-        // Forward to the Kafka client.
-        Future<Void> writeFuture = clientSocket.write(brokerRspMsg);
-
-        // logging:
-        final Buffer rspBuf = brokerRspMsg;
-        writeFuture.onSuccess(h -> {
-            if (LOGGER.isDebugEnabled()) {
-                String msg = String.format(
-                        "proxy->client: broker response corrId=%d (%02X), thread = %s, socket=%s",
-                        corrId, corrId, Thread.currentThread().getName(),
-                        clientSocket.remoteAddress().toString());
-                LogUtils.hexDump(msg, rspBuf);
-            }
-        });
-        // reset the broker rsp buffer:
-        currBrokerRsp.reset();
     }
 
     /**
