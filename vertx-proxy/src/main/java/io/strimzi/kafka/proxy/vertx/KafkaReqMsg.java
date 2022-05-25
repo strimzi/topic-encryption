@@ -28,14 +28,14 @@ public class KafkaReqMsg extends AbstractKafkaMsg {
         return header;
     }
 
-    protected short getAPIVersion() {
+    private short getApiVersion() {
 		return rawMsg.getShort(6);
 	}
 
     public byte[] getHeaderBytes() {
         if (headerBytes == null) {
             int tagBufferSize = 0;
-            short headerVersion = ApiKeys.forId((int)getAPIKey()).requestHeaderVersion(getAPIVersion());
+            short headerVersion = ApiKeys.forId((int)getApiKey()).requestHeaderVersion(getApiVersion());
             if (headerVersion >= 2) {
                 tagBufferSize = 1;
             }

@@ -31,7 +31,7 @@ public class AbstractKafkaMsg {
 		return payload;
 	}
 
-	protected short getAPIKey() {
+	protected short getApiKey() {
 		return rawMsg.getShort(4);
 	}
 
