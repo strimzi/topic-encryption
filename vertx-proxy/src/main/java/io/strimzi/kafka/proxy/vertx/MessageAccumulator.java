@@ -52,15 +52,15 @@ public class MessageAccumulator {
                 break;
             }
 
-            int nextMsgLen = buffer.getInt(pos);
-            if (nextMsgLen+SIZE_LEN > remaining) {
+            int nextMsgLen = buffer.getInt(pos) + SIZE_LEN;
+            if (nextMsgLen > remaining) {
                 break;
             }
 
-            result.add(buffer.slice(pos, pos+nextMsgLen+SIZE_LEN));
+            result.add(buffer.slice(pos, pos+nextMsgLen));
 
-            remaining -= nextMsgLen+SIZE_LEN;
-            pos += nextMsgLen+SIZE_LEN;
+            remaining -= nextMsgLen;
+            pos += nextMsgLen;
         }
 
         if (pos == buffer.length()) {

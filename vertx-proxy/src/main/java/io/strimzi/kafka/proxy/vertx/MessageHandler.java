@@ -89,7 +89,7 @@ public class MessageHandler implements Handler<Buffer> {
 
     /**
      * Close and clear resources so the message handler does not hang around the heap after the
-     * client socket has been closed. To do: set state machine to closing
+     * client socket has been closed. TODO: set state machine to closing
      */
     public void close() {
         LOGGER.debug("Closing MessageHandler");
@@ -129,7 +129,7 @@ public class MessageHandler implements Handler<Buffer> {
                 sendBuffer = processRequest(sendBuffer);
             } catch (EncSerDerException | GeneralSecurityException e) {
                 LOGGER.error("Encryption error processing request", e);
-                // to do: send back Kafka error msg
+                // TODO: send back Kafka error msg
                 return;
             }
             forwardToBroker(sendBuffer);
@@ -306,12 +306,13 @@ public class MessageHandler implements Handler<Buffer> {
         for (Buffer brokerRspMsg : brokerRspMsgs) {
             int corrId = MsgUtil.getRspCorrId(brokerRspMsg);
             if (corrId != -1) {
-                RequestHeader reqHeader = fetchHeaderCache.get(corrId);
-                if (reqHeader != null) {
+                RequestHeader reqHeader = fetchHeaderCache.remove(corrId);
+                if (reqHeader == null) {
+                    LOGGER.warn("Fetch req header not in cache corrId={}", corrId);
+                    // TODO: drop the connection to the client?
+                } else {
                     // The response matches a recently cached fetch request.
                     LOGGER.debug("Broker response matches cached FETCH req header corrId={}", corrId);
-                    fetchHeaderCache.remove(corrId);
-
                     // call enc module for decryption:
                     brokerRspMsg = processFetchResponse(brokerRspMsg, reqHeader);
                 }
@@ -402,7 +403,7 @@ public class MessageHandler implements Handler<Buffer> {
                     processBrokerResponse(buffer);
                 } catch (EncSerDerException | GeneralSecurityException e) {
                     LOGGER.error("Error decrypting broker response", e);
-                    // to do: forward error to client
+                    // TODO: forward error to client
                 }
             }).closeHandler(brokerClose -> {
                 LOGGER.debug("Broker connection closed");
@@ -410,7 +411,7 @@ public class MessageHandler implements Handler<Buffer> {
             });
         }).onFailure(e -> {
             LOGGER.debug("Error connecting to broker", e);
-            // to do: return error to client
+            // TODO: return error to client
         });
     }
 
