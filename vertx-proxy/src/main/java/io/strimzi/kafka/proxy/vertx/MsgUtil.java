@@ -125,7 +125,7 @@ public class MsgUtil {
      * @return
      */
     private static ByteBuffer serialize(FetchResponse<?> fetchRsp, RequestHeader reqHeader) {
-        ResponseHeader rspHeader = new ResponseHeader(reqHeader.correlationId(), reqHeader.apiVersion());
+        ResponseHeader rspHeader = reqHeader.toResponseHeader();
         //System.out.println("****** req: " + reqHeader.apiVersion() + " rsp: " + rspHeader.headerVersion());
         return RequestUtils.serialize(rspHeader.data(), rspHeader.headerVersion(), fetchRsp.data(), reqHeader.apiVersion());
     }
