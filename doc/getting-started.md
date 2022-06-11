@@ -87,12 +87,12 @@ Create a configuration file, `config.json` and add the following JSON contents:
 With the current path set to the target directory, run the proxy with the following Java invocation:
 
 ```
-$ java -cp vertx-proxy-0.0.1-SNAPSHOT-fat.jar io.strimzi.kafka.proxy.vertx.VertRunner
+$ java -jar vertx-proxy-0.0.1-SNAPSHOT-fat.jar
 ```
 
 If successfully started, the following output appears:
 ```
-$ java -cp vertx-proxy-0.0.1-SNAPSHOT-fat.jar io.strimzi.kafka.proxy.vertx.VertRunner
+$ java -jar vertx-proxy-0.0.1-SNAPSHOT-fat.jar
 WARNING: sun.reflect.Reflection.getCallerClass is not supported. This will impact performance.
 2022-04-13 10:30:12 INFO  KafkaProxyVerticle:46 35 - Kafka version: 2.8.0
 2022-04-13 10:30:12 INFO  KafkaProxyVerticle:75 35 - Listening on port 1234
