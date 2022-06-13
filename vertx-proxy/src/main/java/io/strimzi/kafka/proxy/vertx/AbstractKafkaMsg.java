@@ -30,7 +30,11 @@ public class AbstractKafkaMsg {
 	    }
 		return payload;
 	}
-		
+
+	protected short getApiKey() {
+		return rawMsg.getShort(4);
+	}
+
 	protected ByteBuffer extractKafkaPayload(Buffer kafkaMsg) {
 		// copy bytes after leading 4 bytes containing message len:
 		byte[] dataBytes = Arrays.copyOfRange(kafkaMsg.getBytes(), 4, kafkaMsg.getBytes().length);

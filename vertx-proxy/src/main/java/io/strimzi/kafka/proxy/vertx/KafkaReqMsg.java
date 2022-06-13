@@ -5,6 +5,8 @@
 package io.strimzi.kafka.proxy.vertx;
 
 import java.util.Arrays;
+
+import org.apache.kafka.common.protocol.ApiKeys;
 import org.apache.kafka.common.requests.RequestHeader;
 import io.vertx.core.buffer.Buffer;
 
@@ -26,12 +28,19 @@ public class KafkaReqMsg extends AbstractKafkaMsg {
         return header;
     }
 
+    private short getApiVersion() {
+		return rawMsg.getShort(6);
+	}
+
     public byte[] getHeaderBytes() {
         if (headerBytes == null) {
-            // to do: clarify +1
-            int headerSize = FIXED_HEADER_LEN + getClientIdLen();
-            int destIndex = MSG_SIZE_LEN + headerSize + 1;
-            headerBytes = Arrays.copyOfRange(rawMsg.getBytes(), MSG_SIZE_LEN, destIndex);
+            int tagBufferSize = 0;
+            short headerVersion = ApiKeys.forId((int)getApiKey()).requestHeaderVersion(getApiVersion());
+            if (headerVersion >= 2) {
+                tagBufferSize = 1;
+            }
+            int headerSize = FIXED_HEADER_LEN + getClientIdLen() + tagBufferSize;
+            headerBytes = Arrays.copyOfRange(rawMsg.getBytes(), MSG_SIZE_LEN, MSG_SIZE_LEN + headerSize);
         }
         return headerBytes;
     }
