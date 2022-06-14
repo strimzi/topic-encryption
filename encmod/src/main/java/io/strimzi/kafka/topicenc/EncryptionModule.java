@@ -198,7 +198,7 @@ public class EncryptionModule implements EncModControl {
 		SecretKey key = getKey(policy);
 		
 		// instantiate the encrypter/decrypter for this topic 
-		// todo: factory for creating type of encrypter - comes from policy
+		// TODO: factory for creating type of encrypter - comes from policy
 		enc = new AesGcmEncrypter(key);
 		
 		// add to cache and return

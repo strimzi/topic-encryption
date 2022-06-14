@@ -38,7 +38,7 @@ public class KafkaRspMsg extends AbstractKafkaMsg {
 	public byte[] getHeaderBytes() {
 	    
 		if (headerBytes == null) {
-			// to do: test, not correct
+			// TODO: test, not correct
 	    	int headerSize = FIXED_HEADER_LEN; 
 	    	int destIndex = MSG_SIZE_LEN + headerSize + 1;
 			headerBytes = Arrays.copyOfRange(rawMsg.getBytes(),
