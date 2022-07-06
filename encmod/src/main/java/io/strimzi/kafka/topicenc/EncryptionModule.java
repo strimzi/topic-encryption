@@ -28,133 +28,120 @@ import io.strimzi.kafka.topicenc.enc.AesGcmEncrypter;
 import io.strimzi.kafka.topicenc.enc.EncData;
 import io.strimzi.kafka.topicenc.enc.EncrypterDecrypter;
 import io.strimzi.kafka.topicenc.kms.KeyMgtSystem;
+import io.strimzi.kafka.topicenc.kms.KmsException;
 import io.strimzi.kafka.topicenc.policy.PolicyRepository;
 import io.strimzi.kafka.topicenc.policy.TopicPolicy;
 import io.strimzi.kafka.topicenc.ser.AesGcmV1SerDer;
 import io.strimzi.kafka.topicenc.ser.EncSerDer;
 import io.strimzi.kafka.topicenc.ser.EncSerDerException;
 
-
 /**
- * This class is the encompassing, deployable component containing
- * the Kafka topic encryption implementation.
+ * This class is the main component encompassing the Kafka topic encryption
+ * implementation.
  */
 public class EncryptionModule implements EncModControl {
-	
-	private static final Logger LOGGER = LoggerFactory.getLogger(EncryptionModule.class);
-	
-	private PolicyRepository policyRepo;
-	private KeyMgtSystem kms;	
-	private Map<String,EncrypterDecrypter> keyCache;
-	private EncSerDer encSerDer;
-	
-	public EncryptionModule (PolicyRepository policyRepo, KeyMgtSystem kms) {
-		this.policyRepo = policyRepo;
-		this.kms = kms;
-		keyCache = new HashMap<>(); 
-		encSerDer = new AesGcmV1SerDer();
-		// init kms connection
-		// init policy Repo
-		// init kms cache
-		// create enc/dec
-		// init encdec cache
-	}
-	
-	public boolean encrypt(TopicProduceData topicData) 
-	        throws EncSerDerException, GeneralSecurityException {
-		
-		final EncrypterDecrypter encrypter;
-		try {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(EncryptionModule.class);
+
+    private Map<String, EncrypterDecrypter> keyCache;
+    private EncSerDer encSerDer;
+    private PolicyRepository policyRepo;
+
+    public EncryptionModule(PolicyRepository policyRepo) {
+        this.policyRepo = policyRepo;
+        keyCache = new HashMap<>();
+        encSerDer = new AesGcmV1SerDer();
+    }
+
+    public boolean encrypt(TopicProduceData topicData)
+            throws EncSerDerException, GeneralSecurityException, KmsException {
+
+        final EncrypterDecrypter encrypter;
+        try {
             encrypter = getTopicEncrypter(topicData.name());
-        } catch (Exception e1) {
-            LOGGER.error("Error obtaining encrypter for topic " + topicData.name());
+        } catch (Exception e) {
+            String msg = String.format("Error obtaining encrypter for topic: %s", topicData.name());
+            throw new KmsException(msg, e);
+        }
+
+        if (encrypter == null) {
+            LOGGER.debug("No encryption - topic {} is not configured for encryption",
+                    topicData.name());
             return false;
         }
-		
-		if (encrypter == null) {
-		    LOGGER.debug(
-		            "No encryption - topic {} is not configured for encryption",topicData.name());
-		    return false;
-		}
 
-		// If this far, the data should be encrypted. 
-		// Navigate into each record and encrypt.
-		for (PartitionProduceData partitionData : topicData.partitionData()) {
-		    
-			MemoryRecords recs = (MemoryRecords) partitionData.records();
-			MemoryRecordsBuilder builder = createMemoryRecsBuilder(recs.buffer().capacity());
-			for (org.apache.kafka.common.record.Record record : recs.records()) {
-				if (record.hasValue()) {
-				    // encrypt record value:
-				    byte[] plaintext = new byte[record.valueSize()];
-				    record.value().get(plaintext);
-					EncData ciphertext = encrypter.encrypt(plaintext);
-					
-					// serialize the ciphertext and metadata, add to the builder:
-					encSerDer.serialize(builder, record, ciphertext);
-				}
-			}
-			// overwrite the partition's memoryrecords with the encrypted records:
-			partitionData.setRecords(builder.build());
-		}
-		return true;
-	}
-	
-    public boolean decrypt(FetchableTopicResponse fetchRsp) 
-            throws EncSerDerException, GeneralSecurityException {
-        
+        // If this far, the data should be encrypted.
+        // Navigate into each record and encrypt.
+        for (PartitionProduceData partitionData : topicData.partitionData()) {
+
+            MemoryRecords recs = (MemoryRecords) partitionData.records();
+            MemoryRecordsBuilder builder = createMemoryRecsBuilder(recs.buffer().capacity());
+            for (org.apache.kafka.common.record.Record record : recs.records()) {
+                if (record.hasValue()) {
+                    // encrypt record value:
+                    byte[] plaintext = new byte[record.valueSize()];
+                    record.value().get(plaintext);
+                    EncData ciphertext = encrypter.encrypt(plaintext);
+
+                    // serialize the ciphertext and metadata, add to the builder:
+                    encSerDer.serialize(builder, record, ciphertext);
+                }
+            }
+            // overwrite the partition's memoryrecords with the encrypted records:
+            partitionData.setRecords(builder.build());
+        }
+        return true;
+    }
+
+    public boolean decrypt(FetchableTopicResponse fetchRsp)
+            throws EncSerDerException, GeneralSecurityException, KmsException {
+
         String topicName = fetchRsp.topic();
         final EncrypterDecrypter encrypter;
         try {
             encrypter = getTopicEncrypter(topicName);
         } catch (Exception e) {
-            LOGGER.error("Error obtaining encrypter for topic " + topicName, e);
-            return false;
+            String msg = String.format("Error obtaining encrypter for topic: %s ", topicName);
+            throw new KmsException(msg, e);
         }
-        
+
         if (encrypter == null) {
-            LOGGER.debug(
-                    "No decryption - topic {} is not configured for encryption", topicName);
+            LOGGER.debug("No decryption - topic {} is not configured for encryption", topicName);
             return false;
         }
 
-        // If this far, the data was encrypted. 
+        // If this far, the data was encrypted.
         // Navigate into each record and decrypt.
         for (FetchablePartitionResponse partitionData : fetchRsp.partitionResponses()) {
 
             if (LOGGER.isDebugEnabled()) {
                 String msg = String.format(
-                    "partition: %d, logStartOffset: %08X, lastStableOffset: %08X, " +
-                    "partition leader epoch: %04X",
-                    partitionData.partition(),
-                    partitionData.currentLeader().leaderEpoch(),
-                    partitionData.logStartOffset(),
-                    partitionData.lastStableOffset());
+                        "partition: %d, logStartOffset: %08X, lastStableOffset: %08X, "
+                                + "partition leader epoch: %04X",
+                        partitionData.partition(), partitionData.currentLeader().leaderEpoch(),
+                        partitionData.logStartOffset(), partitionData.lastStableOffset());
                 LOGGER.debug(msg);
             }
 
             MemoryRecords recs = (MemoryRecords) partitionData.recordSet();
-            
+
             long firstOffset = getFirstOffset(recs);
-            MemoryRecordsBuilder builder =
-                    createMemoryRecsBuilder(recs.sizeInBytes(),
-                                            partitionData.currentLeader().leaderEpoch(),
-                                            firstOffset);
-            for (org.apache.kafka.common.record.Record record : recs.records()) {            
+            MemoryRecordsBuilder builder = createMemoryRecsBuilder(recs.sizeInBytes(),
+                    partitionData.currentLeader().leaderEpoch(), firstOffset);
+            for (org.apache.kafka.common.record.Record record : recs.records()) {
                 if (record.hasValue()) {
                     byte[] ciphertext = new byte[record.valueSize()];
                     record.value().get(ciphertext);
-                    
+
                     // serialize value into version, iv, ciphertext:
                     EncData md = encSerDer.deserialize(ciphertext);
 
                     // decrypt, add to records builder:
                     byte[] plaintext = encrypter.decrypt(md);
-                    
-                    SimpleRecord newRec = new SimpleRecord(record.timestamp(),
-                                                       record.key(),
-                                                       ByteBuffer.wrap(plaintext),
-                                                       record.headers());
+
+                    SimpleRecord newRec = new SimpleRecord(record.timestamp(), record.key(),
+                            ByteBuffer.wrap(plaintext),
+                            record.headers());
                     builder.append(newRec);
                 }
             }
@@ -166,88 +153,82 @@ public class EncryptionModule implements EncModControl {
     }
 
     /**
-     * EncMod control interface. Empty, placeholder implementation
-     * for the time being.
+     * EncMod control interface. Empty, placeholder implementation for the time
+     * being.
      */
     @Override
-	public void purgeKey(String keyref) {
-	}
+    public void purgeKey(String keyref) {
+    }
 
-	/**
-	 * Consults the policy db whether a topic is to be encrypted. 
-	 * If topic is not to be encrypted, returns null.
-	 * @throws Exception 
-	 */
-	protected EncrypterDecrypter getTopicEncrypter (String topicName) throws Exception {
-		
-		String topicKey = topicName.toLowerCase();
-		
-		// first check cache		
-		EncrypterDecrypter enc = keyCache.get(topicKey);
-		if (enc != null) {
-			return enc;
-		}
-		
-		// query policy db for a policy for this topic: 
-		TopicPolicy policy = policyRepo.getTopicPolicy(topicKey);
-		if (policy == null) {
-			return null; // no encryption policy for this topic. return null
-		}
+    /**
+     * Consults the policy db whether a topic is to be encrypted. If topic is not to
+     * be encrypted, returns null.
+     * 
+     * @throws Exception
+     */
+    protected EncrypterDecrypter getTopicEncrypter(String topicName) throws Exception {
 
-		// encryption policy exists for this topic. Retrieve key 
-		SecretKey key = getKey(policy);
-		
-		// instantiate the encrypter/decrypter for this topic 
-		// TODO: factory for creating type of encrypter - comes from policy
-		enc = new AesGcmEncrypter(key);
-		
-		// add to cache and return
-		keyCache.put(topicKey, enc);
-		return enc;
-	}
-	
-	private long getFirstOffset(MemoryRecords recs) {
+        String topicKey = topicName.toLowerCase();
+
+        // first check cache
+        EncrypterDecrypter enc = keyCache.get(topicKey);
+        if (enc != null) {
+            return enc;
+        }
+
+        // query policy db for a policy for this topic:
+        TopicPolicy policy = policyRepo.getTopicPolicy(topicKey);
+        if (policy == null) {
+            // No encryption policy for this topic, return null,
+            // indicating encryption not required for this topic.
+            return null;
+        }
+
+        // encryption policy exists for this topic. Retrieve key
+        KeyMgtSystem kms = policy.getKms();
+        SecretKey key = kms.getKey(policy.getKeyReference());
+
+        // Instantiate the encrypter/decrypter for this topic.
+        // We always assume AES GCM encrypter now.
+        // TODO: factory for creating type of encrypter according to policy
+        enc = new AesGcmEncrypter(key);
+
+        // add to cache and return
+        keyCache.put(topicKey, enc);
+        return enc;
+    }
+
+    private long getFirstOffset(MemoryRecords recs) {
         for (org.apache.kafka.common.record.Record r : recs.records()) {
             if (r.hasValue()) {
                 return r.offset();
             }
         }
         return 0;
-	}
+    }
 
-	/**
-	 * Given a encryption policy retrieve and return the encryption key.
-	 * @param policy
-	 * @return
-	 * @throws Exception 
-	 */
-	private SecretKey getKey(TopicPolicy policy) throws Exception {
-	    return kms.getKey(policy.getKeyReference());
-	}
-	
     private MemoryRecordsBuilder createMemoryRecsBuilder(int bufSize) {
         return createMemoryRecsBuilder(bufSize, RecordBatch.NO_PARTITION_LEADER_EPOCH);
     }
 
     private MemoryRecordsBuilder createMemoryRecsBuilder(int bufSize, int partitionEpoch) {
         return createMemoryRecsBuilder(bufSize, partitionEpoch, 0L);
-	}
+    }
 
-    private MemoryRecordsBuilder createMemoryRecsBuilder(int bufSize, int partitionEpoch, long baseOffset) {
+    private MemoryRecordsBuilder createMemoryRecsBuilder(int bufSize, int partitionEpoch,
+            long baseOffset) {
         ByteBuffer buffer = ByteBuffer.allocate(10); // will be expanded as needed
-        return new MemoryRecordsBuilder(
-                  buffer,
-                  RecordBatch.CURRENT_MAGIC_VALUE, 
-                  CompressionType.NONE,
-                  TimestampType.CREATE_TIME,
-                  baseOffset,
-                  RecordBatch.NO_TIMESTAMP, // log appendTime
-                  RecordBatch.NO_PRODUCER_ID,
-                  RecordBatch.NO_PRODUCER_EPOCH,
-                  0,              // baseSequence. partitionEpoch > 0 ? (partitionEpoch-1) : 0, RecordBatch.NO_SEQUENCE,
-                  false,          // isTransactional
-                  false,          // isBatch
-                  partitionEpoch, // RecordBatch.NO_PARTITION_LEADER_EPOCH,
-                  bufSize);     
+        return new MemoryRecordsBuilder(buffer, RecordBatch.CURRENT_MAGIC_VALUE,
+                CompressionType.NONE,
+                TimestampType.CREATE_TIME,
+                baseOffset,
+                RecordBatch.NO_TIMESTAMP, // log appendTime
+                RecordBatch.NO_PRODUCER_ID,
+                RecordBatch.NO_PRODUCER_EPOCH,
+                0, // baseSequence. RecordBatch.NO_SEQUENCE
+                false, // isTransactional
+                false, // isBatch
+                partitionEpoch, // RecordBatch.NO_PARTITION_LEADER_EPOCH,
+                bufSize);
     }
 }
