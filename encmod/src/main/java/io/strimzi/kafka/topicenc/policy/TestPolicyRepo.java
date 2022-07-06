@@ -4,43 +4,34 @@
  */
 package io.strimzi.kafka.topicenc.policy;
 
-import java.util.HashMap;
-import java.util.Map;
+import io.strimzi.kafka.topicenc.kms.KeyMgtSystem;
+import io.strimzi.kafka.topicenc.kms.KmsDefinition;
+import io.strimzi.kafka.topicenc.kms.KmsFactory;
 
 /**
- * An implementation of a policy repository used for testing.
+ * An trivial implementation of a policy repository used only for testing. All
+ * topics will be encrypted with the key from TestKms.
  */
 public class TestPolicyRepo implements PolicyRepository {
 
-
-    // List<KmsDefinition> kmsDefinitions = new ArrayList<>();
-    // List<TopicPolicy> topicPolicies = new ArrayList<>();
-
-    Map<String, TopicPolicy> policyMap = new HashMap<>();
-    Map<String, KmsDefinition> kmsMap = new HashMap<>();
+    TopicPolicy policy;
+    KmsDefinition kmsDef;
 
     public TestPolicyRepo() {
-        TopicPolicy policy = new TopicPolicy();
-        policy.setEncMethod("AesGcmV1");
-        policy.setKeyReference("test");
-        policy.setTopic(EncryptionPolicy.ALL_TOPICS);
+        KmsDefinition kmsDef = new KmsDefinition()
+                .setType("test")
+                .setName("testrepo.test");
 
-        policyMap.put(EncryptionPolicy.ALL_TOPICS, policy);
+        KeyMgtSystem kms = KmsFactory.createKms(kmsDef);
+        policy = new TopicPolicy()
+                .setEncMethod("AesGcmV1")
+                .setKeyReference("test")
+                .setTopic(BasicPolicyRepo.ALL_TOPICS)
+                .setKms(kms);
     }
 
     @Override
     public TopicPolicy getTopicPolicy(String topicName) {
-
-        // wildcard has priority:
-        TopicPolicy policy = policyMap.get(EncryptionPolicy.ALL_TOPICS);
-        if (policy != null) {
-            return policy;
-        }
-        return policyMap.get(topicName.toLowerCase());
-    }
-
-    @Override
-    public KmsDefinition getKmsDefinition(String kmsName) {
-        return kmsMap.get(kmsName.toLowerCase());
+        return policy;
     }
 }
