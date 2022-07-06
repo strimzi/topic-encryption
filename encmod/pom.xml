@@ -11,10 +11,19 @@
   <description>desc</description>
 
   <dependencies>
+	<dependency>
+	  <groupId>io.strimzi</groupId>
+	  <artifactId>common</artifactId>
+	  <version>${project.version}</version>
+	</dependency>
   	<dependency>
   		<groupId>org.apache.kafka</groupId>
   		<artifactId>kafka-clients</artifactId>
   	</dependency>
+    <dependency>
+        <groupId>com.jayway.jsonpath</groupId>
+        <artifactId>json-path</artifactId>
+	</dependency>
     <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-api</artifactId>
@@ -42,6 +51,18 @@
         <dependency>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-annotations</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-core</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-annotations</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
     </dependency>
   </dependencies>
 
