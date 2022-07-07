@@ -14,7 +14,6 @@ import java.util.Map;
 
 import org.junit.Test;
 
-import io.strimzi.kafka.topicenc.common.FileUtils;
 import io.strimzi.kafka.topicenc.kms.KmsDefinition;
 
 /**
@@ -23,27 +22,24 @@ import io.strimzi.kafka.topicenc.kms.KmsDefinition;
  */
 public class ConfigUtilTest {
 
-    private static final String KMS_DEF_FILE = "kmsdefs.json";
-    private static final String POLICY_FILE = "policies.json";
+    private static final File KMS_DEF_FILE = new File("src/test/resources/kmsdefs.json");
+    private static final File POLICY_FILE = new File("src/test/resources/policies.json");
 
     @Test
     public void kmsDefLoadTest() throws IOException, URISyntaxException {
-        File kmsFile = FileUtils.getFileFromClasspath(this, KMS_DEF_FILE);
-        Map<String, KmsDefinition> kmsMap = JsonPolicyLoader.loadKmsDefs(kmsFile);
+        Map<String, KmsDefinition> kmsMap = JsonPolicyLoader.loadKmsDefs(KMS_DEF_FILE);
         assertEquals("Unexpected kmsMap size", kmsMap.size(), 3);
     }
 
     @Test
     public void policyLoadTest() throws IOException, URISyntaxException {
-        File kmsFile = FileUtils.getFileFromClasspath(this, KMS_DEF_FILE);
-        Map<String, KmsDefinition> kmsMap = JsonPolicyLoader.loadKmsDefs(kmsFile);
+        Map<String, KmsDefinition> kmsMap = JsonPolicyLoader.loadKmsDefs(KMS_DEF_FILE);
 
-        File policyFile = FileUtils.getFileFromClasspath(this, POLICY_FILE);
-        List<TopicPolicy> policies = JsonPolicyLoader.loadTopicPolicies(policyFile, kmsMap);
+        List<TopicPolicy> policies = JsonPolicyLoader.loadTopicPolicies(POLICY_FILE, kmsMap);
 
         assertEquals("Unexpected policy size", policies.size(), 1);
 
-        List<TopicPolicy> policies2 = JsonPolicyLoader.loadTopicPolicies(kmsFile, policyFile);
+        List<TopicPolicy> policies2 = JsonPolicyLoader.loadTopicPolicies(KMS_DEF_FILE, POLICY_FILE);
 
         assertEquals("Unexpected policy size", policies2.size(), 1);
 
