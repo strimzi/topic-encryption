@@ -4,6 +4,10 @@
  */
 package io.strimzi.kafka.topicenc.kms;
 
+/**
+ * An exception thrown by a KMS implementation, either during instantiation or 
+ *  operation.
+ */
 public class KmsException extends Exception {
 
     private static final long serialVersionUID = -1957947377477505516L;
