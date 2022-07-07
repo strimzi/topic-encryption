@@ -14,8 +14,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
 
 import javax.crypto.SecretKey;
 
@@ -25,13 +23,13 @@ import org.junit.Test;
 import io.strimzi.kafka.topicenc.enc.CryptoUtils;
 import io.strimzi.kafka.topicenc.kms.KeyMgtSystem;
 import io.strimzi.kafka.topicenc.kms.KmsDefinition;
+import io.strimzi.kafka.topicenc.kms.KmsException;
 import io.strimzi.kafka.topicenc.kms.TestKms;
 import io.strimzi.kafka.topicenc.kms.VaultKms;
 
 /**
  * Testing of the Vault KMS.
  */
-// @Testcontainers
 public class VaultKmsTests {
 
     private static final String BASE_URI = "http://127.0.0.1:8200/v1/secret/data";
@@ -40,22 +38,8 @@ public class VaultKmsTests {
     KeyMgtSystem vaultKms;
     KmsDefinition config;
 
-    // @Container
-    // public GenericContainer redis = new
-    // GenericContainer(DockerImageName.parse("redis:5.0.3-alpine"))
-    // .withExposedPorts(6379);
-
-    // @SuppressWarnings("deprecation")
-    // @ClassRule
-    // public static VaultContainer vaultContainer = new VaultContainer<>()
-    // .withVaultToken("my-root-token").withVaultPort(8200)
-    // .withSecretInVault("secret/testing", "top_secret=password1",
-    // "db_password=dbpassword1");
-
     @Before
     public void setUp() {
-        // vaultContainer.start();
-
         // create the KMS:
         try {
             config = new KmsDefinition()
@@ -88,8 +72,7 @@ public class VaultKmsTests {
         try {
             key = vaultKms.getKey("test");
 
-        } catch (URISyntaxException | IOException | InterruptedException | InvalidKeySpecException
-                | NoSuchAlgorithmException e) {
+        } catch (KmsException e) {
             fail("Error retrieving key from kms: " + e.toString());
             return;
         }
@@ -134,3 +117,4 @@ public class VaultKmsTests {
         return CryptoUtils.base64Encode(key);
     }
 }
+

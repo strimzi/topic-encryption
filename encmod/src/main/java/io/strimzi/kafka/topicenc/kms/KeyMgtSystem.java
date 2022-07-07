@@ -4,15 +4,10 @@
  */
 package io.strimzi.kafka.topicenc.kms;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
-
 import javax.crypto.SecretKey;
 
 public interface KeyMgtSystem {
 
-    SecretKey getKey(String keyReference) throws URISyntaxException, IOException,
-            InterruptedException, InvalidKeySpecException, NoSuchAlgorithmException;
+    SecretKey getKey(String keyReference) throws KmsException;
 }
+

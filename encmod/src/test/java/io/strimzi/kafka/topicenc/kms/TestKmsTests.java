@@ -6,11 +6,6 @@ package io.strimzi.kafka.topicenc.kms;
 
 import static org.junit.Assert.fail;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
-
 import javax.crypto.SecretKey;
 
 import org.junit.Test;
@@ -29,8 +24,7 @@ public class TestKmsTests {
         try {
             key = kms.getKey("anything");
 
-        } catch (URISyntaxException | IOException | InterruptedException | InvalidKeySpecException
-                | NoSuchAlgorithmException e) {
+        } catch (KmsException e) {
             fail("Error retrieving key from test kms: " + e.toString());
             return;
         }
@@ -40,3 +34,4 @@ public class TestKmsTests {
         // TODO compare key with expected value.
     }
 }
+
