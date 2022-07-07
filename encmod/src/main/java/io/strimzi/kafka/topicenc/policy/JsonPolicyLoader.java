@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -82,7 +83,7 @@ public class JsonPolicyLoader {
             validPolicies.put(key, policy);
 
             // the policy is valid, assign it a KMS instance
-            String kmsName = Strings.createKey(policy.getKmsName());
+            String kmsName = Strings.createKey(policy.getKmsName(), Locale.getDefault());
             KmsDefinition kmsDef = kmsDefs.get(kmsName);
             if (kmsDef == null) {
                 // unknown KMS
@@ -120,7 +121,7 @@ public class JsonPolicyLoader {
         Map<String, KmsDefinition> kmsMap = new HashMap<>();
         kmsDefs.stream().forEach(kmsDef -> {
             kmsDef.validate();
-            String name = Strings.createKey(kmsDef.getName());
+            String name = Strings.createKey(kmsDef.getName(), Locale.getDefault());
             if (kmsMap.containsKey(name)) {
                 throw new IllegalArgumentException("KMS name is not unique: " + name);
             }
@@ -140,7 +141,7 @@ public class JsonPolicyLoader {
      */
     private static String validate(TopicPolicy policy, Map<String, TopicPolicy> validPolicies) {
         policy.validate();
-        String key = Strings.createKey(policy.getTopic());
+        String key = Strings.createKey(policy.getTopic(), Locale.getDefault());
         if (validPolicies.containsKey(key)) {
             throw new IllegalArgumentException("Multiple policies defined for topic, " + key);
         }
