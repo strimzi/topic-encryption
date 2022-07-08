@@ -61,12 +61,14 @@ public class KmsDefinition {
         return this;
     }
 
-    public void validate() {
+    public KmsDefinition validate() {
         if (Strings.isNullOrEmpty(name)) {
             throw new IllegalArgumentException("Name missing from KMS definition");
         }
         if (Strings.isNullOrEmpty(type)) {
             throw new IllegalArgumentException("KMS type missing from KMS definition");
         }
+        return this;
     }
 }
+
