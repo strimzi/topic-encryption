@@ -4,6 +4,8 @@
  */
 package io.strimzi.kafka.topicenc.policy;
 
+import static io.strimzi.kafka.topicenc.common.Strings.createKey;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -12,6 +14,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.strimzi.kafka.topicenc.common.Strings;
 import io.strimzi.kafka.topicenc.kms.KeyMgtSystem;
 import io.strimzi.kafka.topicenc.kms.KmsDefinition;
 import io.strimzi.kafka.topicenc.kms.KmsFactory;
@@ -83,7 +86,7 @@ public class JsonPolicyLoader {
             validPolicies.put(key, policy);
 
             // the policy is valid, assign it a KMS instance
-            String kmsName = Strings.createKey(policy.getKmsName(), Locale.getDefault());
+            String kmsName = createKey(policy.getKmsName(), Locale.getDefault());
             KmsDefinition kmsDef = kmsDefs.get(kmsName);
             if (kmsDef == null) {
                 // unknown KMS
@@ -118,16 +121,14 @@ public class JsonPolicyLoader {
         List<KmsDefinition> kmsDefs = objectMapper.readValue(file,
                 new TypeReference<List<KmsDefinition>>() {
                 });
-        Map<String, KmsDefinition> kmsMap = new HashMap<>();
-        kmsDefs.stream().forEach(kmsDef -> {
-            kmsDef.validate();
-            String name = Strings.createKey(kmsDef.getName(), Locale.getDefault());
-            if (kmsMap.containsKey(name)) {
-                throw new IllegalArgumentException("KMS name is not unique: " + name);
-            }
-            kmsMap.put(name, kmsDef);
-        });
-        return kmsMap;
+
+        return kmsDefs.stream()
+                .map(kmsDef -> kmsDef.validate())
+                .collect(Collectors.toMap(JsonPolicyLoader::kmsKey, Function.identity()));
+    }
+
+    private static String kmsKey(KmsDefinition kmsDef) {
+        return createKey(kmsDef.getName(), Locale.getDefault());
     }
 
     /**
@@ -141,7 +142,7 @@ public class JsonPolicyLoader {
      */
     private static String validate(TopicPolicy policy, Map<String, TopicPolicy> validPolicies) {
         policy.validate();
-        String key = Strings.createKey(policy.getTopic(), Locale.getDefault());
+        String key = createKey(policy.getTopic(), Locale.getDefault());
         if (validPolicies.containsKey(key)) {
             throw new IllegalArgumentException("Multiple policies defined for topic, " + key);
         }
@@ -167,3 +168,4 @@ public class JsonPolicyLoader {
         }
     }
 }
+
