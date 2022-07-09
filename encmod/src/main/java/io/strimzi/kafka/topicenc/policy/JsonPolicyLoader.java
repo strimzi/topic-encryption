@@ -76,35 +76,15 @@ public class JsonPolicyLoader {
                 new TypeReference<List<TopicPolicy>>() {
                 });
 
-        // iterate over policies, validating them and assigning a KMS instance:
+        // validating each topic policy, assign a KMS instance,
+        // and ensuring unique topic names by creating a map.
         Map<String, KeyMgtSystem> kmsPool = new HashMap<>();
-        Map<String, TopicPolicy> validPolicies = new HashMap<>();
-        policies.stream().forEach(policy -> {
+        policies.stream()
+                .map(policy -> policy.validate())
+                .map(policy -> assignKms(policy, kmsDefs, kmsPool))
+                .collect(Collectors.toMap(JsonPolicyLoader::key, Function.identity()));
 
-            // validate policy (
-            String key = validate(policy, validPolicies);
-            validPolicies.put(key, policy);
-
-            // the policy is valid, assign it a KMS instance
-            String kmsName = createKey(policy.getKmsName(), Locale.getDefault());
-            KmsDefinition kmsDef = kmsDefs.get(kmsName);
-            if (kmsDef == null) {
-                // unknown KMS
-                String msg = String.format(
-                        "Policy for topic %s refers to unknown KMS, %s",
-                        policy.getTopic(), kmsName);
-                throw new IllegalArgumentException(msg);
-            }
-
-            KeyMgtSystem kms = kmsPool.get(kmsName);
-            if (kms == null) {
-                kms = KmsFactory.createKms(kmsDef);
-                kmsPool.put(kmsName, kms);
-            }
-            policy.setKms(kms);
-        });
-
-        // log unused kms defs:
+        // as an FYI, log unused kms defs:
         logUnassignedKmsDefs(kmsPool.keySet(), kmsDefs.keySet());
         return policies;
     }
@@ -124,29 +104,40 @@ public class JsonPolicyLoader {
 
         return kmsDefs.stream()
                 .map(kmsDef -> kmsDef.validate())
-                .collect(Collectors.toMap(JsonPolicyLoader::kmsKey, Function.identity()));
-    }
-
-    private static String kmsKey(KmsDefinition kmsDef) {
-        return createKey(kmsDef.getName(), Locale.getDefault());
+                .collect(Collectors.toMap(JsonPolicyLoader::key, Function.identity()));
     }
 
     /**
-     * Given a policy and the set of currently known policies, validate the policy
-     * contents and verify that there is not already a policy for the policy's
-     * topic. If a constraint is violated, an IllegalArgumentException is thrown.
-     *
-     * @param policy        the policy to validate
-     * @param validPolicies a map of the current valid policies
-     * @return a string to be used as the key to identify this policy
+     * Assign a KeyMgtSystem instance to a topic policy. This is done by matching
+     * the KMS name in the topic policy to a KeyMgtSystem instance.
+     * 
+     * @param policy  the topic policy to which a KMS instance is assigned
+     * @param kmsDefs A map of KmsDefinitions, indexed by name
+     * @param kmsPool A map of already instantiated KMS instances
+     * @return
      */
-    private static String validate(TopicPolicy policy, Map<String, TopicPolicy> validPolicies) {
-        policy.validate();
-        String key = createKey(policy.getTopic(), Locale.getDefault());
-        if (validPolicies.containsKey(key)) {
-            throw new IllegalArgumentException("Multiple policies defined for topic, " + key);
-        }
-        return key;
+    private static TopicPolicy assignKms(TopicPolicy policy, Map<String, KmsDefinition> kmsDefs,
+            Map<String, KeyMgtSystem> kmsPool) {
+
+        String kmsName = createKey(policy.getKmsName(), Locale.getDefault());
+        KmsDefinition kmsDef = kmsDefs.computeIfAbsent(
+                kmsName,
+                k -> {
+                    throw new IllegalArgumentException(
+                            "Topic " + policy.getTopic() + " refers to unknown KMS");
+                });
+        KeyMgtSystem kms = kmsPool.computeIfAbsent(
+                kmsName, k -> KmsFactory.createKms(kmsDef));
+        policy.setKms(kms);
+        return policy;
+    }
+
+    private static String key(KmsDefinition kmsDef) {
+        return createKey(kmsDef.getName(), Locale.getDefault());
+    }
+
+    private static String key(TopicPolicy policy) {
+        return createKey(policy.getTopic(), Locale.getDefault());
     }
 
     /**
