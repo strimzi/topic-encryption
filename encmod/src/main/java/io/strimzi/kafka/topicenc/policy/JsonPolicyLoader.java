@@ -34,6 +34,7 @@ import io.strimzi.kafka.topicenc.kms.KmsFactory;
 public class JsonPolicyLoader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JsonPolicyLoader.class);
+    private static final ObjectMapper OBJ_MAPPER = new ObjectMapper();
 
     /**
      * Load JSON config files and return a fully initialized list of topic
@@ -71,8 +72,7 @@ public class JsonPolicyLoader {
             throws IOException {
 
         // read in policies
-        ObjectMapper objectMapper = new ObjectMapper();
-        List<TopicPolicy> policies = objectMapper.readValue(file,
+        List<TopicPolicy> policies = OBJ_MAPPER.readValue(file,
                 new TypeReference<List<TopicPolicy>>() {
                 });
 
@@ -97,8 +97,7 @@ public class JsonPolicyLoader {
      * @throws IOException if an error occurs accessing the JSON file.
      */
     public static Map<String, KmsDefinition> loadKmsDefs(File file) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        List<KmsDefinition> kmsDefs = objectMapper.readValue(file,
+        List<KmsDefinition> kmsDefs = OBJ_MAPPER.readValue(file,
                 new TypeReference<List<KmsDefinition>>() {
                 });
 
