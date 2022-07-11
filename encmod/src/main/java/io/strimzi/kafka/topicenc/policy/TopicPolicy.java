@@ -9,6 +9,8 @@ import io.strimzi.kafka.topicenc.kms.KeyMgtSystem;
 
 public class TopicPolicy {
 
+    public static final String ALL_TOPICS = "*";
+
     private String topic;
     private String encMethod;
     private String keyReference;
@@ -70,7 +72,7 @@ public class TopicPolicy {
         return this;
     }
 
-    public void validate() {
+    public TopicPolicy validate() {
         if (Strings.isNullOrEmpty(getTopic())) {
             throw new IllegalArgumentException("Topic name missing from policy definition");
         }
@@ -86,5 +88,14 @@ public class TopicPolicy {
                     getTopic());
             throw new IllegalArgumentException(msg);
         }
+        return this;
+    }
+
+    public boolean isWildcardPolicy() {
+        return isWildcard(this);
+    }
+
+    public static boolean isWildcard(TopicPolicy policy) {
+        return TopicPolicy.ALL_TOPICS.equals(policy.getTopic());
     }
 }
