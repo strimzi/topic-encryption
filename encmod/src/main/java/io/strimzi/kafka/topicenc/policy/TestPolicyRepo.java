@@ -26,7 +26,7 @@ public class TestPolicyRepo implements PolicyRepository {
         policy = new TopicPolicy()
                 .setEncMethod("AesGcmV1")
                 .setKeyReference("test")
-                .setTopic(BasicPolicyRepo.ALL_TOPICS)
+                .setTopic(TopicPolicy.ALL_TOPICS)
                 .setKms(kms);
     }
 
