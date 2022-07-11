@@ -71,6 +71,6 @@ public class Config {
   }
 
   private static boolean isEmpty(String s) {
-    return s == null || s.isBlank();
+    return s == null || s.trim().length() == 0;
   }
 }

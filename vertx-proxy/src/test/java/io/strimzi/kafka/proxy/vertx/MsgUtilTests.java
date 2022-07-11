@@ -42,7 +42,7 @@ public class MsgUtilTests {
         File rspDataFile = new File("src/test/resources/fetch_response.hex");
         byte[] fetchRsp = TestDataFileUtil.hexToBin(rspDataFile);
         
-        var rspBuf = Buffer.buffer(fetchRsp);
+        Buffer rspBuf = Buffer.buffer(fetchRsp);
         int corrId = MsgUtil.getRspCorrId(rspBuf);
         Assert.assertEquals("Correlation ID", (int) 0x4B, corrId);
     }

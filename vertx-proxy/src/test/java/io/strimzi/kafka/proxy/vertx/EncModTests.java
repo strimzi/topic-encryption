@@ -41,12 +41,12 @@ public class EncModTests {
     public void testEncryption() throws IOException, NoSuchAlgorithmException {
         encMod = new EncryptionModule(new TestPolicyRepo(), new TestKms());
         dummyConfig = new Config(0, "localhost",null);
-        var handler = new MessageHandler(encMod, dummyConfig);
+        MessageHandler handler = new MessageHandler(encMod, dummyConfig);
 
         File reqDataFile = new File("src/test/resources/produce_request.hex");
         byte[] prodReq = TestDataFileUtil.hexToBin(reqDataFile);
         
-        var reqBuf = Buffer.buffer(prodReq);
+        Buffer reqBuf = Buffer.buffer(prodReq);
 
         try {
             Buffer sendBuf = handler.processProduceRequest(reqBuf);
@@ -72,10 +72,10 @@ public class EncModTests {
         // set up so we can call the handler
         encMod = new EncryptionModule(new TestPolicyRepo(), new TestKms());
         dummyConfig = this.createDummyConfig();
-        var handler = new MessageHandler(encMod, dummyConfig);
-        var rspBuf = Buffer.buffer(fetchRsp);
+        MessageHandler handler = new MessageHandler(encMod, dummyConfig);
+        Buffer rspBuf = Buffer.buffer(fetchRsp);
         int corrId = MsgUtil.getRspCorrId(rspBuf);
-        var reqHeader = new RequestHeader(ApiKeys.FETCH, (short) 12, "console-producer", corrId);
+        RequestHeader reqHeader = new RequestHeader(ApiKeys.FETCH, (short) 12, "console-producer", corrId);
         
         // decrypt:
         Buffer fetchRspBuf;
