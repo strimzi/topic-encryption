@@ -46,7 +46,7 @@ public class KeyProtectTests {
         // retrieve test key
         try {
             SecretKey key = keyProtect.getKey(KEY_REF);
-            assertNotNull("Retrieved key does not equal stored key.", key);
+            assertNotNull("Retrieved key is null.", key);
         } catch (KmsException e) {
             fail("Error retrieving key from kms: " + e.toString());
             return;
