@@ -6,9 +6,12 @@ package io.strimzi.kafka.topicenc.enc;
 
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
+
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
+
+import io.strimzi.kafka.topicenc.common.CryptoUtils;
 
 /**
  * An Encrypter/Decrypter for AES GCM.
