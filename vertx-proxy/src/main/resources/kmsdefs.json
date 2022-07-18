@@ -1,0 +1,12 @@
+[
+  {
+    "name"       : "vault-test",
+    "kmsClassname" : "io.strimzi.kafka.topicenc.kms.vault.VaultKms",
+    "uri"        : "http://127.0.0.1:8200/v1/secret/data/test",
+    "credential" : "kashjdkjhsdhhkjhsh"
+  },
+  {
+    "name"         : "test",
+    "kmsClassname" : "io.strimzi.kafka.topicenc.kms.test.TestKms"
+  }
+]

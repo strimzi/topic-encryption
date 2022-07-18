@@ -1,0 +1,19 @@
+[
+  {
+    "name"         : "vault-test",
+    "kmsClassname" : "io.strimzi.kafka.topicenc.kms.vault.VaultKms",
+    "uri"          : "http://127.0.0.1:8200/v1/secret/data/test",
+    "credential"   : "s.3gxh8p83kxkTv9IB66GmORtK"
+  },
+  {
+    "name"         : "test",
+    "kmsClassname" : "io.strimzi.kafka.topicenc.kms.test.TestKms"
+  },
+  {
+    "name"         : "cloud",
+    "kmsClassname" : "io.strimzi.kafka.topicenc.kms.keyprotect.KeyProtectKms",
+    "uri"          : "http://sfsffs.ibm.com/abc",
+    "instanceId"   : "shdjkjahkjahd",
+    "credential"   : "<apikey>"
+  }
+]
