@@ -4,30 +4,29 @@
  */
 package io.strimzi.kafka.topicenc.kms;
 
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
-
 import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 
-/** For test only. This class to be moved into test source path */
+import io.strimzi.kafka.topicenc.enc.CryptoUtils;
+
+/**
+ * An implementation KeyMgtSystem which serves up a pre-defined key. For test
+ * only.
+ */
 public class TestKms implements KeyMgtSystem {
-    
+
     private static String TEST_KEY = "bfUup8fs92bnOHlghWXegCJleHhbnNaf31RZL0d6r/I=";
 
     SecretKey key;
-    
-    public TestKms() throws NoSuchAlgorithmException {
-        byte[] decodedKey = Base64.getDecoder().decode(TEST_KEY);
-        key = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");         
-    }
-    
-    @Override
-    public void setCredential(String cred) {
-    }
 
     @Override
     public SecretKey getKey(String keyReference) {
+        if (key == null) {
+            key = createTestKey();
+        }
         return key;
+    }
+
+    private SecretKey createTestKey() {
+        return CryptoUtils.base64Decode(TEST_KEY);
     }
 }
