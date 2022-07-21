@@ -75,6 +75,7 @@
     </properties>  
 
     <modules>
+        <module>common</module>
         <module>encmod</module>
         <module>vertx-proxy</module>
     </modules>
