@@ -254,9 +254,9 @@ public class MessageHandler implements Handler<Buffer> {
                 FetchRequest fetch = FetchRequest.parse(req.getPayload(),
                         req.getHeader().apiVersion());
 
-                String msg = String.format("FETCH epoch = %04X, session = %04X",
-                        fetch.metadata().epoch(), fetch.metadata().sessionId());
-                LOGGER.debug(msg);
+                LOGGER.debug("FETCH epoch = {}, session = {}",
+                        Integer.toHexString(fetch.metadata().epoch()),
+                        Integer.toHexString(fetch.metadata().sessionId()));
             }
             return req.getRawMsg();
 
