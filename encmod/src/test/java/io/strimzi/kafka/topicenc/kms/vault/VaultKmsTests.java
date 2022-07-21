@@ -1,4 +1,4 @@
-/*
+i/*
  * Copyright Strimzi authors.
  * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
  */
@@ -14,18 +14,17 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.security.NoSuchAlgorithmException;
 
 import javax.crypto.SecretKey;
 
 import org.junit.Before;
 import org.junit.Test;
 
-import io.strimzi.kafka.topicenc.enc.CryptoUtils;
+import io.strimzi.kafka.topicenc.common.CryptoUtils;
 import io.strimzi.kafka.topicenc.kms.KeyMgtSystem;
 import io.strimzi.kafka.topicenc.kms.KmsDefinition;
 import io.strimzi.kafka.topicenc.kms.KmsException;
-import io.strimzi.kafka.topicenc.kms.TestKms;
-import io.strimzi.kafka.topicenc.kms.VaultKms;
 
 /**
  * Testing of the Vault KMS.
@@ -44,7 +43,8 @@ public class VaultKmsTests {
         try {
             config = new KmsDefinition()
                     .setUri(new URI(BASE_URI))
-                    .setCredential("s.spTfnRfahqL8q1D1YBhEZSAi");
+                    .setKmsClassname(VaultKms.class.getName())
+                    .setCredential("<vault token>");
 
             vaultKms = new VaultKms(config);
 
@@ -57,7 +57,13 @@ public class VaultKmsTests {
     @Test
     public void basicVaultTests() {
 
-        String testKey = createTestKey();
+        String testKey;
+        try {
+            testKey = createTestKey();
+        } catch (NoSuchAlgorithmException e) {
+            fail("Creating test key: " + e.toString());
+            return;
+        }
 
         // store test key
         try {
@@ -87,8 +93,9 @@ public class VaultKmsTests {
     private void storeKey(String keyRef, String key)
             throws URISyntaxException, IOException, InterruptedException {
 
-        URI uri = createKeyUri(keyRef);
+        URI uri = VaultKms.createKeyUri(config.getUri(), keyRef);
         String data = String.format(STORE_KEY_DATA, keyRef, key);
+
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(uri)
                 .header(VaultKms.VAULT_TOKEN_HEADER, config.getCredential())
@@ -102,18 +109,14 @@ public class VaultKmsTests {
         }
     }
 
-    private URI createKeyUri(String keyRef) throws URISyntaxException {
-        String uriStr = String.format("%s/%s", config.getUri().toString(), keyRef);
-        return new URI(uriStr);
-    }
-
     /**
      * Obtains the test key from the test KMS.
      * 
      * @return base 64 encoding of the key.
+     * @throws NoSuchAlgorithmException
      */
-    private String createTestKey() {
-        SecretKey key = new TestKms().getKey("test");
+    private String createTestKey() throws NoSuchAlgorithmException {
+        SecretKey key = CryptoUtils.generateAesKey(128);
         return CryptoUtils.base64Encode(key);
     }
 }
