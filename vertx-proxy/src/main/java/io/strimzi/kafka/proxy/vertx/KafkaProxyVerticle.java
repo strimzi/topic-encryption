@@ -4,11 +4,17 @@
  */
 package io.strimzi.kafka.proxy.vertx;
 
+import java.io.File;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.strimzi.kafka.proxy.vertx.util.ConfigUtil;
 import io.strimzi.kafka.topicenc.EncryptionModule;
-import io.strimzi.kafka.topicenc.kms.TestKms;
+import io.strimzi.kafka.topicenc.policy.BasicPolicyRepo;
+import io.strimzi.kafka.topicenc.policy.JsonPolicyLoader;
+import io.strimzi.kafka.topicenc.policy.TopicPolicy;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -34,11 +40,18 @@ public class KafkaProxyVerticle extends AbstractVerticle {
         super.init(vertx, context);
         JsonObject jsonConfig = config();
 
-        this.config = Config.toConfig(jsonConfig);
+        this.config = ConfigUtil.toProxyConfig(jsonConfig);
         context.put(CTX_KEY_CONFIG, config);
 
         try {
-            encMod = new EncryptionModule(config.policyRepo(), new TestKms());
+            List<TopicPolicy> topicPolicy = JsonPolicyLoader.loadTopicPolicies(
+                    new File(config.getKmsConfigFile()),
+                    new File(config.getPolicyFile()));
+
+            BasicPolicyRepo policy = new BasicPolicyRepo(topicPolicy);
+
+            encMod = new EncryptionModule(policy);
+
         } catch (Exception e) {
             throw new RuntimeException("Error initializing Encryption Module", e);
         }

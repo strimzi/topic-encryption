@@ -1,0 +1,10 @@
+[
+  {
+    "topic"      : "accounting",
+    "kmsName"    : "vault-test"
+  },
+  {
+    "topic"      : "news",
+    "kmsName"    : "test"
+  }
+]

@@ -1,0 +1,7 @@
+[
+  {
+    "topic"        : "*",
+    "kmsName"      : "test",
+    "keyReference" : "testkey"
+  }
+]

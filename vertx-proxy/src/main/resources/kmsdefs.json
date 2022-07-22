@@ -1,0 +1,12 @@
+[
+  {
+    "name"       : "vault-test",
+    "type"       : "vault",
+    "uri"        : "http://127.0.0.1:8200/v1/secret/data/test",
+    "credential" : "kashjdkjhsdhhkjhsh"
+  },
+  {
+    "name"       : "test",
+    "type"       : "test"
+  }
+]

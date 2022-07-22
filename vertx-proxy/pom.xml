@@ -12,7 +12,17 @@
   <url>https://github.com/strimzi/topic-encryption</url>
 
   <dependencies>
-      <dependency>
+	<dependency>
+	  <groupId>io.strimzi</groupId>
+	  <artifactId>encmod</artifactId>
+	  <version>${project.version}</version>
+	</dependency>
+	<dependency>
+	  <groupId>io.strimzi</groupId>
+	  <artifactId>common</artifactId>
+	  <version>${project.version}</version>
+	</dependency>
+    <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
         <scope>test</scope>
@@ -29,11 +39,6 @@
 	  <groupId>org.apache.kafka</groupId>
 	  <artifactId>kafka-clients</artifactId>
     </dependency>
-	<dependency>
-	  <groupId>io.strimzi</groupId>
-	  <artifactId>encmod</artifactId>
-	  <version>${project.version}</version>
-	</dependency>
     <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-api</artifactId>

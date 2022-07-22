@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
 import org.apache.kafka.common.message.FetchResponseData;
 import org.apache.kafka.common.message.FetchResponseData.FetchableTopicResponse;
 import org.apache.kafka.common.message.ProduceRequestData.TopicProduceData;
@@ -20,7 +21,14 @@ import org.apache.kafka.common.requests.ProduceRequest;
 import org.apache.kafka.common.requests.RequestHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.strimzi.kafka.proxy.vertx.msg.KafkaReqMsg;
+import io.strimzi.kafka.proxy.vertx.msg.KafkaRspMsg;
+import io.strimzi.kafka.proxy.vertx.msg.MessageAccumulator;
+import io.strimzi.kafka.proxy.vertx.msg.MsgUtil;
+import io.strimzi.kafka.proxy.vertx.util.LogUtils;
 import io.strimzi.kafka.topicenc.EncryptionModule;
+import io.strimzi.kafka.topicenc.kms.KmsException;
 import io.strimzi.kafka.topicenc.ser.EncSerDerException;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
@@ -30,9 +38,10 @@ import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetSocket;
 
 /**
- * Handles message flow between a single socket with a Kafka client and a single socket to the
- * broker. As such, class variables are scoped to a socket pair. Global objects such as the
- * Encryption Module are passed through the vertx context argument to the constructor.
+ * Handles message flow between a single socket with a Kafka client and a single
+ * socket to the broker. As such, class variables are scoped to a socket pair.
+ * Global objects such as the Encryption Module are passed through the vertx
+ * context argument to the constructor.
  */
 public class MessageHandler implements Handler<Buffer> {
 
@@ -69,7 +78,7 @@ public class MessageHandler implements Handler<Buffer> {
         }
 
         connectToBroker(clientSocket);
-        LOGGER.info("MessageHandler created {}", brokerSocketFuture.isComplete());
+        LOGGER.debug("MessageHandler created. isComplete: {}", brokerSocketFuture.isComplete());
     }
 
     /**
@@ -88,8 +97,9 @@ public class MessageHandler implements Handler<Buffer> {
     }
 
     /**
-     * Close and clear resources so the message handler does not hang around the heap after the
-     * client socket has been closed. TODO: set state machine to closing
+     * Close and clear resources so the message handler does not hang around the
+     * heap after the client socket has been closed. TODO: set state machine to
+     * closing
      */
     public void close() {
         LOGGER.debug("Closing MessageHandler");
@@ -107,9 +117,9 @@ public class MessageHandler implements Handler<Buffer> {
     }
 
     /**
-     * This is the main entry to message handling, triggered by the arrival of data from the Kafka
-     * client. The received buffer may not be a complete Kafka message, so we assemble fragments
-     * until we have a complete message.
+     * This is the main entry to message handling, triggered by the arrival of data
+     * from the Kafka client. The received buffer may not be a complete Kafka
+     * message, so we assemble fragments until we have a complete message.
      */
     @Override
     public void handle(Buffer buffer) {
@@ -127,7 +137,7 @@ public class MessageHandler implements Handler<Buffer> {
             // We have a complete kafka msg - process it, forward to broker
             try {
                 sendBuffer = processRequest(sendBuffer);
-            } catch (EncSerDerException | GeneralSecurityException e) {
+            } catch (EncSerDerException | GeneralSecurityException | KmsException e) {
                 LOGGER.error("Encryption error processing request", e);
                 // TODO: send back Kafka error msg
                 return;
@@ -137,17 +147,18 @@ public class MessageHandler implements Handler<Buffer> {
     }
 
     /**
-     * Inspects the incoming Kafka request message and dispatches it depending on apikey (i.e.,
-     * Kafka message type). If not a request type we are interested in, returns the unaltered buffer
-     * so it is forwarded to the broker as-is.
+     * Inspects the incoming Kafka request message and dispatches it depending on
+     * apikey (i.e., Kafka message type). If not a request type we are interested
+     * in, returns the unaltered buffer so it is forwarded to the broker as-is.
      *
      * @param buffer
      * @return
      * @throws GeneralSecurityException
      * @throws EncSerDerException
+     * @throws KmsException
      */
     public Buffer processRequest(Buffer buffer)
-            throws EncSerDerException, GeneralSecurityException {
+            throws EncSerDerException, GeneralSecurityException, KmsException {
         if (buffer.length() < 10) {
             LOGGER.debug("processRequest():  buffer too small, ignoring.");
             return buffer;
@@ -172,22 +183,24 @@ public class MessageHandler implements Handler<Buffer> {
     }
 
     /**
-     * Process a produce request. We introspect the request and determine whether it contains topic
-     * data which should be encrypted. If so, the encrypted records are re-computed and overwrite
-     * the original plaintext.
+     * Process a produce request. We introspect the request and determine whether it
+     * contains topic data which should be encrypted. If so, the encrypted records
+     * are re-computed and overwrite the original plaintext.
      *
      * @param kafkaMsg
      * @return
      * @throws GeneralSecurityException
      * @throws EncSerDerException
+     * @throws KmsException
      */
     public Buffer processProduceRequest(Buffer buffer)
-            throws EncSerDerException, GeneralSecurityException {
+            throws EncSerDerException, GeneralSecurityException, KmsException {
 
         if (LOGGER.isDebugEnabled()) {
             LogUtils.hexDump("client->proxy: PRODUCE request", buffer);
         }
-        // create an KafkaReqMsg instance - this enables access to the header, apiversion
+        // create an KafkaReqMsg instance - this enables access to the header,
+        // apiversion
         KafkaReqMsg kafkaMsg;
         try {
             kafkaMsg = new KafkaReqMsg(buffer);
@@ -201,8 +214,8 @@ public class MessageHandler implements Handler<Buffer> {
         }
 
         // deserialize the msg to a Produce instance:
-        ProduceRequest req =
-                ProduceRequest.parse(kafkaMsg.getPayload(), kafkaMsg.getHeader().apiVersion());
+        ProduceRequest req = ProduceRequest.parse(kafkaMsg.getPayload(),
+                kafkaMsg.getHeader().apiVersion());
 
         // iterate over the request's partitions, passing them to the
         // encryption module where they are assessed for encryptopn.
@@ -225,8 +238,8 @@ public class MessageHandler implements Handler<Buffer> {
     }
 
     /**
-     * Process fetch requests. We cache the fetch request headers in order to identify fetch
-     * responses on the back flow.
+     * Process fetch requests. We cache the fetch request headers in order to
+     * identify fetch responses on the back flow.
      *
      * @param kafkaMsg
      * @return
@@ -238,14 +251,14 @@ public class MessageHandler implements Handler<Buffer> {
             fetchHeaderCache.put(req.getHeader().correlationId(), req.getHeader());
 
             if (LOGGER.isDebugEnabled()) {
-                FetchRequest fetch =
-                        FetchRequest.parse(req.getPayload(), req.getHeader().apiVersion());
+                FetchRequest fetch = FetchRequest.parse(req.getPayload(),
+                        req.getHeader().apiVersion());
 
-                String msg = String.format("FETCH epoch = %04X, session = %04X",
-                        fetch.metadata().epoch(), fetch.metadata().sessionId());
-                LOGGER.debug(msg);
+                LOGGER.debug("FETCH epoch = {}, session = {}",
+                        Integer.toHexString(fetch.metadata().epoch()),
+                        Integer.toHexString(fetch.metadata().sessionId()));
             }
-            return req.rawMsg;
+            return req.getRawMsg();
 
         } catch (Exception e) {
             LOGGER.error("Error in processFetchRequest()", e);
@@ -283,16 +296,17 @@ public class MessageHandler implements Handler<Buffer> {
     }
 
     /**
-     * This method is the handler for broker responses. We check responses as to whether they match
-     * a cached Fetch request, based on correlation ID. If so, pass to the encryption module to
-     * check whether decryption is needed.
+     * This method is the handler for broker responses. We check responses as to
+     * whether they match a cached Fetch request, based on correlation ID. If so,
+     * pass to the encryption module to check whether decryption is needed.
      * 
      * @param brokerRsp
      * @throws GeneralSecurityException
      * @throws EncSerDerException
+     * @throws KmsException
      */
     public void processBrokerResponse(Buffer brokerRsp)
-            throws EncSerDerException, GeneralSecurityException {
+            throws EncSerDerException, GeneralSecurityException, KmsException {
 
         // accumulate message fragments
         currBrokerRsp.append(brokerRsp);
@@ -308,11 +322,12 @@ public class MessageHandler implements Handler<Buffer> {
             if (corrId != -1) {
                 RequestHeader reqHeader = fetchHeaderCache.remove(corrId);
                 if (reqHeader == null) {
-                    LOGGER.warn("Fetch req header not in cache corrId={}", corrId);
-                    // TODO: drop the connection to the client?
+                    LOGGER.debug("Fetch req header not in cache corrId={}", corrId);
+                    // TODO: when to drop the connection to the client?
                 } else {
                     // The response matches a recently cached fetch request.
-                    LOGGER.debug("Broker response matches cached FETCH req header corrId={}", corrId);
+                    LOGGER.debug("Broker response matches cached FETCH req header corrId={}",
+                            corrId);
                     // call enc module for decryption:
                     brokerRspMsg = processFetchResponse(brokerRspMsg, reqHeader);
                 }
@@ -337,21 +352,22 @@ public class MessageHandler implements Handler<Buffer> {
     }
 
     /**
-     * Fetch responses are processed here. We navigate the topic responses, passing to the
-     * encryption module which determines if they are to be decrypted.
+     * Fetch responses are processed here. We navigate the topic responses, passing
+     * to the encryption module which determines if they are to be decrypted.
      *
      * @param buffer
      * @param reqHeader
      * @return
      * @throws GeneralSecurityException
      * @throws EncSerDerException
+     * @throws KmsException
      */
     public Buffer processFetchResponse(Buffer buffer, RequestHeader reqHeader)
-            throws EncSerDerException, GeneralSecurityException {
+            throws EncSerDerException, GeneralSecurityException, KmsException {
         // instantiate FetchResponse instance
         KafkaRspMsg rsp = new KafkaRspMsg(buffer, reqHeader.apiVersion());
-        FetchResponse<?> fetch =
-                (FetchResponse<?>) AbstractResponse.parseResponse(rsp.getPayload(), reqHeader);
+        FetchResponse<?> fetch = (FetchResponse<?>) AbstractResponse.parseResponse(rsp.getPayload(),
+                reqHeader);
 
         // iterate through response records, decrypting where needed
         FetchResponseData data = fetch.data();
@@ -377,7 +393,8 @@ public class MessageHandler implements Handler<Buffer> {
     }
 
     /**
-     * Given a socket from a Kafka client, open and initialize a corresponding socket to the broker.
+     * Given a socket from a Kafka client, open and initialize a corresponding
+     * socket to the broker.
      *
      * @param clientSocket
      */
@@ -401,7 +418,7 @@ public class MessageHandler implements Handler<Buffer> {
             socket.handler(buffer -> {
                 try {
                     processBrokerResponse(buffer);
-                } catch (EncSerDerException | GeneralSecurityException e) {
+                } catch (EncSerDerException | GeneralSecurityException | KmsException e) {
                     LOGGER.error("Error decrypting broker response", e);
                     // TODO: forward error to client
                 }

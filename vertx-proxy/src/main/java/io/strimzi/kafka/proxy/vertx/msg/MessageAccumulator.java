@@ -2,7 +2,7 @@
  * Copyright Strimzi authors.
  * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
  */
-package io.strimzi.kafka.proxy.vertx;
+package io.strimzi.kafka.proxy.vertx.msg;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,6 +10,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.strimzi.kafka.proxy.vertx.util.LogUtils;
 import io.vertx.core.buffer.Buffer;
 
 /**
