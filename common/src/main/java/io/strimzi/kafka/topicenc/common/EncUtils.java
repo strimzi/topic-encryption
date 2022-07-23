@@ -2,7 +2,7 @@
  * Copyright Strimzi authors.
  * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
  */
-package io.strimzi.kafka.topicenc.enc;
+package io.strimzi.kafka.topicenc.common;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
@@ -21,9 +21,9 @@ import org.slf4j.LoggerFactory;
 /**
  * Commonly general purpose cryptographic functions and definitions.
  */
-public class CryptoUtils {
+public class EncUtils {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CryptoUtils.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EncUtils.class);
 
     public static final String AES = "AES";
     public static final String AES_GCM_PADDING = AES + "/GCM/PKCS5Padding";
@@ -60,6 +60,10 @@ public class CryptoUtils {
     public static SecretKey base64Decode(String key64) {
         byte[] decodedKey = Base64.getDecoder().decode(key64);
         // we assume AES
+        return createAesSecretKey(decodedKey);
+    }
+
+    public static SecretKey createAesSecretKey(byte[] decodedKey) {
         return new SecretKeySpec(decodedKey, 0, decodedKey.length, AES);
     }
 
@@ -76,3 +80,4 @@ public class CryptoUtils {
         }
     }
 }
+
