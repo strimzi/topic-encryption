@@ -27,7 +27,7 @@ import io.strimzi.kafka.proxy.vertx.util.LogUtils;
 import io.strimzi.kafka.topicenc.EncryptionModule;
 import io.strimzi.kafka.topicenc.kms.KmsException;
 import io.strimzi.kafka.topicenc.policy.PolicyRepository;
-import io.strimzi.kafka.topicenc.policy.TestPolicyRepo;
+import io.strimzi.kafka.topicenc.policy.TestPolicyRepository;
 import io.strimzi.kafka.topicenc.ser.EncSerDerException;
 import io.vertx.core.buffer.Buffer;
 
@@ -43,14 +43,12 @@ public class EncModTest {
     public void testEncryption()
             throws IOException, EncSerDerException, GeneralSecurityException, KmsException,
             URISyntaxException {
-        PolicyRepository policyRepo = new TestPolicyRepo();
+        PolicyRepository policyRepo = new TestPolicyRepository();
         encMod = new EncryptionModule(policyRepo);
         dummyConfig = createDummyConfig();
         var handler = new MessageHandler(encMod, dummyConfig);
 
         File reqDataFile = new File("src/test/resources/produce_request.hex");
-        // File reqDataFile = FileUtils.getFileFromClasspath(this,
-        // "produce_request.hex");
         byte[] prodReq = TestDataFileUtil.hexToBin(reqDataFile);
 
         var reqBuf = Buffer.buffer(prodReq);
@@ -65,12 +63,9 @@ public class EncModTest {
             throws IOException, EncSerDerException, GeneralSecurityException, KmsException,
             URISyntaxException {
 
-        // File fetchRsp = FileUtils.getFileFromClasspath(this, "fetch_response.hex");
         File fetchRsp = new File("src/test/resources/fetch_response.hex");
         testDecryption(fetchRsp);
 
-        // File multiFetchRsp = FileUtils.getFileFromClasspath(this,
-        // "fetch_multi_response.hex");
         File multiFetchRsp = new File("src/test/resources/fetch_multi_response.hex");
         testDecryption(multiFetchRsp);
     }
@@ -81,7 +76,7 @@ public class EncModTest {
         LogUtils.hexDump("FETCH response encrypted", fetchRsp);
 
         // set up so we can call the handler
-        encMod = new EncryptionModule(new TestPolicyRepo());
+        encMod = new EncryptionModule(new TestPolicyRepository());
         dummyConfig = this.createDummyConfig();
         var handler = new MessageHandler(encMod, dummyConfig);
         var rspBuf = Buffer.buffer(fetchRsp);
@@ -124,3 +119,4 @@ public class EncModTest {
         return new Config();
     }
 }
+
