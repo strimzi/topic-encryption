@@ -1,6 +1,6 @@
 /*
- * Copyright Strimzi authors. License: Apache License 2.0 (see the file LICENSE or
- * http://apache.org/licenses/LICENSE-2.0.html).
+ * Copyright Strimzi authors.
+ * License: Apache License 2.0 (see the file LICENSE or  http://apache.org/licenses/LICENSE-2.0.html).
  */
 package io.strimzi.kafka.topicenc.enc;
 
@@ -9,6 +9,7 @@ import java.security.SecureRandom;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
+import io.strimzi.kafka.topicenc.common.EncUtils;
 
 /**
  * An Encrypter/Decrypter for AES GCM.
@@ -25,7 +26,7 @@ public class AesGcmEncrypter implements EncrypterDecrypter {
 
     public AesGcmEncrypter(SecretKey key) {
         this.key = key;
-        this.transformation = CryptoUtils.AES256_GCM_NOPADDING;
+        this.transformation = EncUtils.AES256_GCM_NOPADDING;
         this.random = new SecureRandom();
     }
 

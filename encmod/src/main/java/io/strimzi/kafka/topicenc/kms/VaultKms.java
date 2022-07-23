@@ -23,7 +23,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.strimzi.kafka.topicenc.common.CryptoUtils;
+import io.strimzi.kafka.topicenc.common.EncUtils;
 import io.strimzi.kafka.topicenc.kms.KeyMgtSystem;
 import io.strimzi.kafka.topicenc.kms.KmsDefinition;
 import io.strimzi.kafka.topicenc.kms.KmsException;
@@ -100,10 +100,10 @@ public class VaultKms implements KeyMgtSystem {
         // parse out key, decode and return:
         String key = getKey(rsp.body(), keyReference);
         LOGGER.debug("Vault KMS returned key");
-        return CryptoUtils.base64Decode(key);
+        return EncUtils.base64Decode(key);
     }
 
-    protected static URI createKeyUri(URI baseUri, String keyRef) throws URISyntaxException {
+    public static URI createKeyUri(URI baseUri, String keyRef) throws URISyntaxException {
         String uriStr = String.format("%s/%s", baseUri.toString(), keyRef);
         return new URI(uriStr);
     }

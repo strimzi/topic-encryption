@@ -16,6 +16,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import io.strimzi.kafka.topicenc.common.EncUtils;
 import io.strimzi.kafka.topicenc.kms.TestKms;
 import io.strimzi.kafka.topicenc.ser.AesGcmV1SerDer;
 import io.strimzi.kafka.topicenc.ser.EncSerDerException;
@@ -95,7 +96,7 @@ public class AesGcmEncTests {
 
         for (int i = 0; i < iterations; i++) {
             int bufSize = rand.nextInt(maxBufSize - minBufSize) + minBufSize;
-            byte[] buf = CryptoUtils.createRandom(bufSize);
+            byte[] buf = EncUtils.createRandom(bufSize);
 
             testSerDer(buf);
         }

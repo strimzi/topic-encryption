@@ -6,7 +6,7 @@ package io.strimzi.kafka.topicenc.kms;
 
 import javax.crypto.SecretKey;
 
-import io.strimzi.kafka.topicenc.enc.CryptoUtils;
+import io.strimzi.kafka.topicenc.common.EncUtils;
 
 /**
  * An implementation KeyMgtSystem which serves up a pre-defined key. For test
@@ -27,6 +27,6 @@ public class TestKms implements KeyMgtSystem {
     }
 
     private SecretKey createTestKey() {
-        return CryptoUtils.base64Decode(TEST_KEY);
+        return EncUtils.base64Decode(TEST_KEY);
     }
 }
