@@ -1,6 +1,6 @@
 /*
- * Copyright Strimzi authors. License: Apache License 2.0 (see the file LICENSE or
- * http://apache.org/licenses/LICENSE-2.0.html).
+ * Copyright Strimzi authors.
+ * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
  */
 package io.strimzi.kafka.proxy.vertx;
 
@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import io.strimzi.kafka.proxy.vertx.util.ConfigUtil;
 import io.strimzi.kafka.topicenc.EncryptionModule;
-import io.strimzi.kafka.topicenc.policy.BasicPolicyRepo;
+import io.strimzi.kafka.topicenc.policy.InMemoryPolicyRepository;
 import io.strimzi.kafka.topicenc.policy.JsonPolicyLoader;
 import io.strimzi.kafka.topicenc.policy.TopicPolicy;
 import io.vertx.core.AbstractVerticle;
@@ -48,7 +48,7 @@ public class KafkaProxyVerticle extends AbstractVerticle {
                     new File(config.getKmsConfigFile()),
                     new File(config.getPolicyFile()));
 
-            BasicPolicyRepo policy = new BasicPolicyRepo(topicPolicy);
+            InMemoryPolicyRepository policy = new InMemoryPolicyRepository(topicPolicy);
 
             encMod = new EncryptionModule(policy);
 
