@@ -1,4 +1,4 @@
-i/*
+/*
  * Copyright Strimzi authors.
  * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
  */
@@ -21,10 +21,11 @@ import javax.crypto.SecretKey;
 import org.junit.Before;
 import org.junit.Test;
 
-import io.strimzi.kafka.topicenc.common.CryptoUtils;
+import io.strimzi.kafka.topicenc.common.EncUtils;
 import io.strimzi.kafka.topicenc.kms.KeyMgtSystem;
 import io.strimzi.kafka.topicenc.kms.KmsDefinition;
 import io.strimzi.kafka.topicenc.kms.KmsException;
+import io.strimzi.kafka.topicenc.kms.VaultKms;
 
 /**
  * Testing of the Vault KMS.
@@ -43,7 +44,8 @@ public class VaultKmsTests {
         try {
             config = new KmsDefinition()
                     .setUri(new URI(BASE_URI))
-                    .setKmsClassname(VaultKms.class.getName())
+                    .setType("vault")
+                    //.setKmsClassname(VaultKms.class.getName())
                     .setCredential("<vault token>");
 
             vaultKms = new VaultKms(config);
@@ -85,7 +87,7 @@ public class VaultKmsTests {
         if (key == null) {
             fail("getKey() did not return a key");
         }
-        String retrievedKey = CryptoUtils.base64Encode(key);
+        String retrievedKey = EncUtils.base64Encode(key);
         assertEquals("Retrieved key does not equal stored key.", testKey, retrievedKey);
         // compare
     }
@@ -116,8 +118,8 @@ public class VaultKmsTests {
      * @throws NoSuchAlgorithmException
      */
     private String createTestKey() throws NoSuchAlgorithmException {
-        SecretKey key = CryptoUtils.generateAesKey(128);
-        return CryptoUtils.base64Encode(key);
+        SecretKey key = EncUtils.generateAesKey(128);
+        return EncUtils.base64Encode(key);
     }
 }
 

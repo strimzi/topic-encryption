@@ -1,4 +1,4 @@
-package io.strimzi.kafka.topicenc.enc;
+package io.strimzi.kafka.topicenc.common;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -9,7 +9,7 @@ import javax.crypto.SecretKey;
 
 import org.junit.Test;
 
-public class CryptoUtilsTest {
+public class EncUtilsTest {
 
     /**
      * Simply exercise the random number generation with different sizes.
@@ -35,18 +35,19 @@ public class CryptoUtilsTest {
             fail("Error retrieving test key: " + e.toString());
             return;
         }
-        String key64 = CryptoUtils.base64Encode(key);
-        SecretKey keyCopy = CryptoUtils.base64Decode(key64);
+        String key64 = EncUtils.base64Encode(key);
+        SecretKey keyCopy = EncUtils.base64Decode(key64);
 
         assertEquals("keys are not equal.", key, keyCopy);
     }
 
     private SecretKey getTestKey() throws NoSuchAlgorithmException {
-        return CryptoUtils.generateAesKey(256);
+        return EncUtils.generateAesKey(256);
     }
 
     private void testRng(int bufLen) {
-        byte[] random = CryptoUtils.createRandom(bufLen);
+        byte[] random = EncUtils.createRandom(bufLen);
         assertEquals("createRandom returned buffer of unexpected length", random.length, bufLen);
     }
 }
+

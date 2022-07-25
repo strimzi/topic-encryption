@@ -6,6 +6,7 @@ package io.strimzi.kafka.topicenc.policy;
 
 import java.util.ArrayList;
 import java.util.List;
+import io.strimzi.kafka.topicenc.kms.KmsDefinition;
 
 public class EncryptionPolicy {
     
