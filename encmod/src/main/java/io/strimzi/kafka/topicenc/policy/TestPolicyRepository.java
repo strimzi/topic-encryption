@@ -6,23 +6,35 @@ package io.strimzi.kafka.topicenc.policy;
 
 import io.strimzi.kafka.topicenc.kms.KeyMgtSystem;
 import io.strimzi.kafka.topicenc.kms.KmsDefinition;
+import io.strimzi.kafka.topicenc.kms.KmsException;
 import io.strimzi.kafka.topicenc.kms.KmsFactory;
 
 /**
  * An trivial implementation of a policy repository used only for testing. All
  * topics will be encrypted with the key from TestKms.
  */
-public class TestPolicyRepo implements PolicyRepository {
+public class TestPolicyRepository implements PolicyRepository {
 
     TopicPolicy policy;
     KmsDefinition kmsDef;
 
-    public TestPolicyRepo() {
+    /**
+     * Initializes the test repository with a single policy for all topics. The
+     * encryption key is hard coded in the TestKms. This is to be used for testing
+     * only.
+     * 
+     * @throws KmsException
+     */
+    public TestPolicyRepository() throws KmsException {
+
+        // create the test KMS:
         KmsDefinition kmsDef = new KmsDefinition()
-                .setType("test")
-                .setName("testrepo.test");
+                .setName("test")
+                .setType("test");
 
         KeyMgtSystem kms = KmsFactory.createKms(kmsDef);
+
+        // create the single test policy for all topics:
         policy = new TopicPolicy()
                 .setEncMethod("AesGcmV1")
                 .setKeyReference("test")
@@ -35,3 +47,4 @@ public class TestPolicyRepo implements PolicyRepository {
         return policy;
     }
 }
+
