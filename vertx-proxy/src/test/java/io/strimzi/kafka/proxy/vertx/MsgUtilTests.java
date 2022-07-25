@@ -12,6 +12,7 @@ import org.apache.kafka.common.protocol.ApiKeys;
 import org.junit.Assert;
 import org.junit.Test;
 
+import io.strimzi.kafka.topicenc.common.LogUtils;
 import io.vertx.core.buffer.Buffer;
 
 public class MsgUtilTests {

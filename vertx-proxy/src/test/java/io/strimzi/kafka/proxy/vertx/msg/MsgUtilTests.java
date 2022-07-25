@@ -14,7 +14,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import io.strimzi.kafka.proxy.vertx.TestDataFileUtil;
-import io.strimzi.kafka.proxy.vertx.util.LogUtils;
+import io.strimzi.kafka.topicenc.common.LogUtils;
 import io.vertx.core.buffer.Buffer;
 
 public class MsgUtilTests {

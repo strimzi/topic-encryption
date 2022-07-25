@@ -1,6 +1,6 @@
 /*
- * Copyright Strimzi authors. License: Apache License 2.0 (see the file LICENSE or
- * http://apache.org/licenses/LICENSE-2.0.html).
+ * Copyright Strimzi authors.
+ * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
  */
 package io.strimzi.kafka.proxy.vertx;
 
@@ -26,8 +26,8 @@ import io.strimzi.kafka.proxy.vertx.msg.KafkaReqMsg;
 import io.strimzi.kafka.proxy.vertx.msg.KafkaRspMsg;
 import io.strimzi.kafka.proxy.vertx.msg.MessageAccumulator;
 import io.strimzi.kafka.proxy.vertx.msg.MsgUtil;
-import io.strimzi.kafka.proxy.vertx.util.LogUtils;
 import io.strimzi.kafka.topicenc.EncryptionModule;
+import io.strimzi.kafka.topicenc.common.LogUtils;
 import io.strimzi.kafka.topicenc.kms.KmsException;
 import io.strimzi.kafka.topicenc.ser.EncSerDerException;
 import io.vertx.core.Context;
@@ -197,7 +197,7 @@ public class MessageHandler implements Handler<Buffer> {
             throws EncSerDerException, GeneralSecurityException, KmsException {
 
         if (LOGGER.isDebugEnabled()) {
-            LogUtils.hexDump("client->proxy: PRODUCE request", buffer);
+            LogUtils.hexDump("client->proxy: PRODUCE request", buffer.getBytes());
         }
         // create an KafkaReqMsg instance - this enables access to the header,
         // apiversion
@@ -208,7 +208,7 @@ public class MessageHandler implements Handler<Buffer> {
         } catch (IllegalArgumentException e) {
             LOGGER.error("Error parsing PRODUCE request", e);
             if (LOGGER.isDebugEnabled()) {
-                LogUtils.hexDump("Request causing error", buffer);
+                LogUtils.hexDump("Request causing error", buffer.getBytes());
             }
             return buffer;
         }
@@ -263,7 +263,7 @@ public class MessageHandler implements Handler<Buffer> {
         } catch (Exception e) {
             LOGGER.error("Error in processFetchRequest()", e);
             if (LOGGER.isDebugEnabled()) {
-                LogUtils.hexDump("processFetchRequest: Error parsing buffer", buffer);
+                LogUtils.hexDump("processFetchRequest: Error parsing buffer", buffer.getBytes());
             }
             return buffer;
         }
@@ -345,7 +345,7 @@ public class MessageHandler implements Handler<Buffer> {
                             "proxy->client: broker response corrId=%d (%02X), thread = %s, socket=%s",
                             corrId, corrId, Thread.currentThread().getName(),
                             clientSocket.remoteAddress().toString());
-                    LogUtils.hexDump(msg, rspBuf);
+                    LogUtils.hexDump(msg, rspBuf.getBytes());
                 }
             });
         }
