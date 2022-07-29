@@ -2,19 +2,16 @@
  * Copyright Strimzi authors. License: Apache License 2.0 (see the file LICENSE or
  * http://apache.org/licenses/LICENSE-2.0.html).
  */
-package io.strimzi.kafka.topicenc;
+package io.strimzi.kafka.topicenc.common;
 
-import java.util.Base64;
-
+/**
+ * Quick and dirty hex dump methods for troubleshooting.
+ */
 public class LogUtils {
 
-    public static String base64Encode(byte[] rawBytes) {
-        return Base64.getEncoder().encodeToString(rawBytes);
-    }
-
-    public static byte[] base64Decode(String base64Str) {
-        return Base64.getDecoder().decode(base64Str);
-    }
+    private static final String MID_COLUMN = "   ";
+    private static final byte MIN_CHAR = 0x20;
+    private static final byte MAX_CHAR = 0x7E;
 
     public static void hexDump(String title, byte[] buffer) {
 
@@ -26,22 +23,20 @@ public class LogUtils {
                     buffer.length);
             System.out.println(title);
         }
-        final String MID_FILLER = "   ";
         StringBuilder hex = new StringBuilder();
         StringBuilder chars = new StringBuilder();
-        int numBytes = buffer.length;
         int i = 0;
-        for (i = 0; i < numBytes; i++) {
+        for (i = 0; i < buffer.length; i++) {
 
             if ((i > 0) && (i % 16 == 0)) {
-                hex.append(MID_FILLER);
+                hex.append(MID_COLUMN);
                 hex.append(chars);
                 hex.append('\n');
                 chars = new StringBuilder();
             }
             byte b = buffer[i];
             hex.append(String.format("%02X ", b));
-            if (b >= 0x20 && b < 0x7E) {
+            if (b >= MIN_CHAR && b < MAX_CHAR) {
                 chars.append((char) b);
             } else {
                 chars.append('.');
@@ -50,15 +45,16 @@ public class LogUtils {
 
         // loop over. add remainders
         if (chars.length() > 0) {
-            for (int j = i % 16; j < 16; j++) {
-                hex.append("   ");
+            if (i % 16 != 0) {
+                for (int j = i % 16; j < 16; j++) {
+                    hex.append("   ");
+                }
             }
-            hex.append(MID_FILLER);
+            hex.append(MID_COLUMN);
             hex.append(chars);
             hex.append('\n');
         }
         // for now, write to stdout
         System.out.println(hex);
     }
-
 }

@@ -10,7 +10,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.strimzi.kafka.proxy.vertx.util.LogUtils;
+import io.strimzi.kafka.topicenc.common.LogUtils;
 import io.vertx.core.buffer.Buffer;
 
 /**
@@ -35,7 +35,7 @@ public class MessageAccumulator {
 
     public void append(Buffer buffer) {
         if (LOGGER.isDebugEnabled()) {
-            LogUtils.hexDump("Msg append", buffer);
+            LogUtils.hexDump("Msg append", buffer.getBytes());
         }
         this.buffer.appendBuffer(buffer);
     }

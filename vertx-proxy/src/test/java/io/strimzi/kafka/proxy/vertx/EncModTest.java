@@ -23,8 +23,8 @@ import org.junit.Test;
 
 import io.strimzi.kafka.proxy.vertx.msg.KafkaRspMsg;
 import io.strimzi.kafka.proxy.vertx.msg.MsgUtil;
-import io.strimzi.kafka.proxy.vertx.util.LogUtils;
 import io.strimzi.kafka.topicenc.EncryptionModule;
+import io.strimzi.kafka.topicenc.common.LogUtils;
 import io.strimzi.kafka.topicenc.kms.KmsException;
 import io.strimzi.kafka.topicenc.policy.PolicyRepository;
 import io.strimzi.kafka.topicenc.policy.TestPolicyRepository;
@@ -86,7 +86,7 @@ public class EncModTest {
         // decrypt:
         Buffer fetchRspBuf = handler.processFetchResponse(rspBuf, reqHeader);
 
-        LogUtils.hexDump("FETCH response decrypted", fetchRspBuf);
+        LogUtils.hexDump("FETCH response decrypted", fetchRspBuf.getBytes());
 
         // instantiate the decrypted fetch response
         KafkaRspMsg rsp = new KafkaRspMsg(fetchRspBuf, reqHeader.apiVersion());
