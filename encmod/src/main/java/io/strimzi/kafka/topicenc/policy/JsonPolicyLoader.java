@@ -1,6 +1,6 @@
 /*
- * Copyright Strimzi authors. License: Apache License 2.0 (see the file LICENSE or
- * http://apache.org/licenses/LICENSE-2.0.html).
+ * Copyright Strimzi authors. 
+ * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
  */
 package io.strimzi.kafka.topicenc.policy;
 
@@ -25,7 +25,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.strimzi.kafka.topicenc.kms.KeyMgtSystem;
 import io.strimzi.kafka.topicenc.kms.KmsDefinition;
-import io.strimzi.kafka.topicenc.kms.KmsFactory;
+import io.strimzi.kafka.topicenc.kms.KmsException;
+import io.strimzi.kafka.topicenc.kms.KmsFactoryManager;
 
 /**
  * Utility methods for loading and processing configuration information residing
@@ -77,10 +78,11 @@ public class JsonPolicyLoader {
                 });
 
         // validating each topic policy, assign a KMS instance,
-        // and ensuring unique topic names by creating a map.
+        // ensuring unique topic names by filling a map.
         Map<String, KeyMgtSystem> kmsPool = new HashMap<>();
         policies.stream()
                 .map(policy -> policy.validate())
+                .map(policy -> validateKms(policy, kmsDefs))
                 .map(policy -> assignKms(policy, kmsDefs, kmsPool))
                 .collect(Collectors.toMap(JsonPolicyLoader::key, Function.identity()));
 
@@ -100,34 +102,64 @@ public class JsonPolicyLoader {
         List<KmsDefinition> kmsDefs = OBJ_MAPPER.readValue(file,
                 new TypeReference<List<KmsDefinition>>() {
                 });
-
         return kmsDefs.stream()
                 .map(kmsDef -> kmsDef.validate())
                 .collect(Collectors.toMap(JsonPolicyLoader::key, Function.identity()));
     }
 
     /**
-     * Assign a KeyMgtSystem instance to a topic policy. This is done by matching
-     * the KMS name in the topic policy to a KeyMgtSystem instance.
+     * Assert that the kms name in the topic policy corresponds to a valid, known
+     * KMS definition. If not valid, an IllegalArgumentException is thrown.
      * 
-     * @param policy  the topic policy to which a KMS instance is assigned
-     * @param kmsDefs A map of KmsDefinitions, indexed by name
-     * @param kmsPool A map of already instantiated KMS instances
-     * @return
+     * @param policy       the policy being verified
+     * @param validKmsDefs a map of known, valid KMS definitions.
+     * @return the policy instance passed as an argument
      */
-    private static TopicPolicy assignKms(TopicPolicy policy, Map<String, KmsDefinition> kmsDefs,
-            Map<String, KeyMgtSystem> kmsPool) {
+    private static TopicPolicy validateKms(TopicPolicy policy,
+            Map<String, KmsDefinition> validKmsDefs) {
 
         String kmsName = createKey(policy.getKmsName(), Locale.getDefault());
-        KmsDefinition kmsDef = kmsDefs.computeIfAbsent(
+
+        // verify the policy refers to a known KMS definition
+        validKmsDefs.computeIfAbsent(
                 kmsName,
                 k -> {
                     throw new IllegalArgumentException(
-                            "Topic " + policy.getTopic() + " refers to unknown KMS");
+                            "Policy for topic, " + policy.getTopic() + ", refers to unknown KMS.");
                 });
-        KeyMgtSystem kms = kmsPool.computeIfAbsent(
-                kmsName, k -> KmsFactory.createKms(kmsDef));
+        // if this far, the topic policy contains a known KMS def, as it should.
+        return policy;
+    }
+
+    /**
+     * Assign a KeyMgtSystem instance to a topic policy by matching the policy's KMS
+     * name to a KeyMgtSystem instance.
+     * 
+     * @param policy       the topic policy to which a KMS instance is assigned
+     * @param validKmsDefs A map of valid KmsDefinitions, indexed by name
+     * @param kmsPool      A pool of instantiated KMS instances
+     * @return
+     */
+    private static TopicPolicy assignKms(TopicPolicy policy,
+            Map<String, KmsDefinition> validKmsDefs,
+            Map<String, KeyMgtSystem> kmsPool) {
+
+        String kmsName = createKey(policy.getKmsName(), Locale.getDefault());
+
+        // Check the pool (aka cache) of KMS instances first
+        KeyMgtSystem kms = kmsPool.get(kmsName);
+        if (kms == null) {
+            // kms not instantiated yet. Create and add to pool.
+            KmsDefinition kmsDef = validKmsDefs.get(kmsName);
+            try {
+                kms = KmsFactoryManager.getInstance().createKms(kmsDef);
+            } catch (KmsException e) {
+                throw new RuntimeException(e);
+            }
+            kmsPool.put(kmsName, kms);
+        }
         policy.setKms(kms);
+        // return policy for method chaining
         return policy;
     }
 
@@ -158,4 +190,3 @@ public class JsonPolicyLoader {
         }
     }
 }
-
