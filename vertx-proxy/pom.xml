@@ -31,7 +31,6 @@
 	  <groupId>io.strimzi</groupId>
 	  <artifactId>kms-test</artifactId>
 	  <version>${project.version}</version>
-	  <scope>test</scope>
 	</dependency>
     <dependency>
         <groupId>junit</groupId>
