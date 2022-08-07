@@ -18,6 +18,14 @@ import java.util.stream.Collectors;
 public class KmsFactoryManager {
 
     private static final KmsFactoryManager INSTANCE = new KmsFactoryManager();
+    private static final String DUP_KMS_MSG = """
+            KMS provider deployment error. Provider names must be unique.
+            The following provider names appear more than once: %s.
+            Possible actions:
+            - Remove one or more jar files from the classpath.
+            - Rebuild the KMS provider with a new, unique name.
+            - Verify the correct KMS provider name is specified in the configuration.
+            """;
 
     private final ServiceLoader<KmsFactory> loader;
     private final List<String> dups;
@@ -38,9 +46,7 @@ public class KmsFactoryManager {
     public static KmsFactoryManager getInstance() throws KmsException {
 
         if (INSTANCE.dups.size() > 1) {
-            throw new KmsException(
-                    "Invalid KMS provider configuration, duplicate short names: "
-                            + INSTANCE.dups.toString());
+            throw new KmsException(String.format(DUP_KMS_MSG, INSTANCE.dups));
         }
         return INSTANCE;
     }
@@ -58,7 +64,7 @@ public class KmsFactoryManager {
         // obtain the factory using its type (name).
         final KmsFactory kmsFactory = getFactory(kmsDef.getType());
         if (kmsFactory == null) {
-            throw new KmsException("Unknown type when initializing KMS: " + kmsDef.getType());
+            throw new KmsException("Unknown KMS type while initializing KMS: " + kmsDef.getType());
         }
         // use the factory to return the KeyMgtSystem instance.
         return kmsFactory.createKms(kmsDef);
@@ -86,7 +92,8 @@ public class KmsFactoryManager {
     }
 
     /**
-     * Creates a list of duplicate factory names. Factories names must be unique.
+     * Creates a list of duplicate KMS provider names appearing on the classpath.
+     * Factories names must be unique.
      * 
      * @return
      */
