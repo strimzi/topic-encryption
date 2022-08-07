@@ -5,7 +5,8 @@
 package io.strimzi.kafka.topicenc.kms;
 
 /**
- * Interface to a KMS factory.
+ * Interface to a KMS factory. Implementations are discovered by the
+ * KmsFactoryManager using the Java ServiceLoader mechanism.
  */
 public interface KmsFactory {
 
