@@ -7,6 +7,7 @@ package io.strimzi.kafka.topicenc.kms;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.stream.Collectors;
@@ -29,6 +30,7 @@ public class KmsFactoryManager {
 
     private final ServiceLoader<KmsFactory> loader;
     private final List<String> dups;
+    private final Locale local = Locale.getDefault();
 
     private KmsFactoryManager() {
         // load all factory service providers
@@ -102,7 +104,7 @@ public class KmsFactoryManager {
         Iterator<KmsFactory> it = loader.iterator();
         while (it.hasNext()) {
             KmsFactory factory = it.next();
-            String name = factory.getName().toLowerCase();
+            String name = factory.getName().toLowerCase(local);
             Integer num = nameMap.get(name);
             if (num == null) {
                 num = Integer.valueOf(0);
