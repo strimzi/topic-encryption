@@ -101,14 +101,10 @@ public class KmsFactoryManager {
      */
     private List<String> getDuplicateNames() {
         Map<String, Integer> nameMap = new HashMap<>();
-        Iterator<KmsFactory> it = loader.iterator();
-        while (it.hasNext()) {
-            KmsFactory factory = it.next();
+        int initValue = 0;
+        for (KmsFactory factory : loader) {
             String name = factory.getName().toLowerCase(local);
-            Integer num = nameMap.get(name);
-            if (num == null) {
-                num = Integer.valueOf(0);
-            }
+            Integer num = nameMap.getOrDefault(name, initValue);
             nameMap.put(name, num.intValue() + 1);
         }
 
