@@ -5,11 +5,9 @@
 package io.strimzi.kafka.topicenc.kms;
 
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -20,22 +18,22 @@ public class KmsFactoryManager {
 
     private static final KmsFactoryManager INSTANCE = new KmsFactoryManager();
     private static final String DUP_KMS_MSG = """
-            KMS provider deployment error. Provider names must be unique.
+            KMS provider error: Provider factory names must be unique.
             The following provider names appear more than once: %s.
             Possible actions:
             - Remove one or more jar files from the classpath.
             - Rebuild the KMS provider with a new, unique name.
             - Verify the correct KMS provider name is specified in the configuration.
             """;
+    private final int INIT_FACTORY_COUNT = 0;
 
     private final ServiceLoader<KmsFactory> loader;
-    private final List<String> dups;
-    private final Locale local = Locale.getDefault();
+    private final Set<String> dups;
 
     private KmsFactoryManager() {
         // load all factory service providers
         loader = ServiceLoader.load(KmsFactory.class);
-        // determine if any have duplicate names.
+        // determine duplicate factory names.
         dups = getDuplicateNames();
     }
 
@@ -66,7 +64,8 @@ public class KmsFactoryManager {
         // obtain the factory using its type (name).
         final KmsFactory kmsFactory = getFactory(kmsDef.getType());
         if (kmsFactory == null) {
-            throw new KmsException("Unknown KMS type while initializing KMS: " + kmsDef.getType());
+            throw new KmsException(
+                    "Unknown KMS factory name while initializing KMS: " + kmsDef.getType());
         }
         // use the factory to return the KeyMgtSystem instance.
         return kmsFactory.createKms(kmsDef);
@@ -79,18 +78,16 @@ public class KmsFactoryManager {
      * @return
      * @throws KmsException
      */
-    private KmsFactory getFactory(String type) throws KmsException {
+    private KmsFactory getFactory(String name) throws KmsException {
         // currently a naive implementation, iterating linearly over service providers.
-        // This is fine for now because there are only 3 ytypes of factories supported.
-        Iterator<KmsFactory> it = loader.iterator();
-        while (it.hasNext()) {
-            KmsFactory factory = it.next();
-            if (factory.getName().equalsIgnoreCase(type)) {
+        // This is fine for now because there are only 3 types of factories supported.
+        for (KmsFactory factory : loader) {
+            if (factory.getName().equals(name)) {
                 return factory;
             }
         }
-        // if this far, a factory by the given name does not exist. Throw exception.
-        throw new KmsException("Unknown KMS type: " + type);
+        // if this far, a factory with the given name does not exist.
+        return null;
     }
 
     /**
@@ -99,19 +96,20 @@ public class KmsFactoryManager {
      * 
      * @return
      */
-    private List<String> getDuplicateNames() {
-        Map<String, Integer> nameMap = new HashMap<>();
-        int initValue = 0;
+    private Set<String> getDuplicateNames() {
+        // construct map of factory names to an integer representing how often the
+        // factory name occurs:
+        Map<String, Integer> factoryNameCounts = new HashMap<>();
         for (KmsFactory factory : loader) {
-            String name = factory.getName().toLowerCase(local);
-            Integer num = nameMap.getOrDefault(name, initValue);
-            nameMap.put(name, num.intValue() + 1);
+            String name = factory.getName();
+            Integer num = factoryNameCounts.getOrDefault(name, INIT_FACTORY_COUNT);
+            factoryNameCounts.put(name, num.intValue() + 1);
         }
-
-        return nameMap.entrySet()
+        // return any name occuring more than once:
+        return factoryNameCounts.entrySet()
                 .stream()
                 .filter(x -> x.getValue() > 1)
                 .map(x -> x.getKey())
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
     }
 }
