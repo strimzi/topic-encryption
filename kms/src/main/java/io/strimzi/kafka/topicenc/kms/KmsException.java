@@ -5,7 +5,7 @@
 package io.strimzi.kafka.topicenc.kms;
 
 /**
- * An exception thrown by a KMS implementation, either during instantiation or 
+ * An exception thrown by a KMS implementation, either during instantiation or
  * operation.
  */
 public class KmsException extends Exception {

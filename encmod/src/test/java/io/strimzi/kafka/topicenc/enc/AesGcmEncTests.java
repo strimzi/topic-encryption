@@ -17,7 +17,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import io.strimzi.kafka.topicenc.common.EncUtils;
-import io.strimzi.kafka.topicenc.kms.TestKms;
+import io.strimzi.kafka.topicenc.kms.KeyMgtSystem;
+import io.strimzi.kafka.topicenc.kms.KmsDefinition;
+import io.strimzi.kafka.topicenc.kms.KmsException;
+import io.strimzi.kafka.topicenc.kms.KmsFactoryManager;
 import io.strimzi.kafka.topicenc.ser.AesGcmV1SerDer;
 import io.strimzi.kafka.topicenc.ser.EncSerDerException;
 
@@ -25,12 +28,17 @@ public class AesGcmEncTests {
 
     private static final String TEST_MSG = "abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_-=+[]{}";
 
-    TestKms kms;
+    KeyMgtSystem kms;
     AesGcmEncrypter enc;
 
     @Before
-    public void testsInit() throws NoSuchAlgorithmException {
-        kms = new TestKms();
+    public void testsInit() throws NoSuchAlgorithmException, KmsException {
+    	
+        KmsDefinition kmsDef = new KmsDefinition()
+                .setName("test")
+                .setType("test");
+
+        kms = KmsFactoryManager.getInstance().createKms(kmsDef);
         SecretKey key = kms.getKey("test");
         enc = new AesGcmEncrypter(key);
     }

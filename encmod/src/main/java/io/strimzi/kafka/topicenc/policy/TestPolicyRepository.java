@@ -1,6 +1,6 @@
 /*
- * Copyright Strimzi authors. License: Apache License 2.0 (see the file LICENSE or
- * http://apache.org/licenses/LICENSE-2.0.html).
+ * Copyright Strimzi authors.
+ * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
  */
 package io.strimzi.kafka.topicenc.policy;
 
@@ -8,6 +8,7 @@ import io.strimzi.kafka.topicenc.kms.KeyMgtSystem;
 import io.strimzi.kafka.topicenc.kms.KmsDefinition;
 import io.strimzi.kafka.topicenc.kms.KmsException;
 import io.strimzi.kafka.topicenc.kms.KmsFactory;
+import io.strimzi.kafka.topicenc.kms.KmsFactoryManager;
 
 /**
  * An trivial implementation of a policy repository used only for testing. All
@@ -32,7 +33,7 @@ public class TestPolicyRepository implements PolicyRepository {
                 .setName("test")
                 .setType("test");
 
-        KeyMgtSystem kms = KmsFactory.createKms(kmsDef);
+        KeyMgtSystem kms = KmsFactoryManager.getInstance().createKms(kmsDef);
 
         // create the single test policy for all topics:
         policy = new TopicPolicy()
@@ -47,4 +48,3 @@ public class TestPolicyRepository implements PolicyRepository {
         return policy;
     }
 }
-

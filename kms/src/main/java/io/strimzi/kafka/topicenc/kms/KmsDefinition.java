@@ -8,13 +8,17 @@ import java.net.URI;
 
 import io.strimzi.kafka.topicenc.common.Strings;
 
+/**
+ * KmsDefinition describes the attributes required to describe and thus
+ * configure an instance of KeyMgtSystem.
+ */
 public class KmsDefinition {
 
     private URI uri; // optional
     private String name; // required
-    private String type;
     private String instanceId; // optional. IBM Cloud requires this
     private String credential;
+    private String type;
 
     public URI getUri() {
         return uri;
@@ -43,15 +47,6 @@ public class KmsDefinition {
         return this;
     }
 
-    public String getType() {
-        return type;
-    }
-
-    public KmsDefinition setType(String type) {
-        this.type = type;
-        return this;
-    }
-
     public String getCredential() {
         return credential;
     }
@@ -61,14 +56,22 @@ public class KmsDefinition {
         return this;
     }
 
+    public String getType() {
+        return type;
+    }
+
+    public KmsDefinition setType(String type) {
+        this.type = type;
+        return this;
+    }
+
     public KmsDefinition validate() {
         if (Strings.isNullOrEmpty(name)) {
             throw new IllegalArgumentException("Name missing from KMS definition");
         }
         if (Strings.isNullOrEmpty(type)) {
-            throw new IllegalArgumentException("KMS type missing from KMS definition");
+            throw new IllegalArgumentException("KMS type is not present.");
         }
         return this;
     }
 }
-

@@ -7,7 +7,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>vertx-proxy</artifactId>
-  <name>proxy</name>
+  <name>Kafka proxy (vert.x)</name>
   <description>Experimental kafka proxy based on vert.x</description>
   <url>https://github.com/strimzi/topic-encryption</url>
 
@@ -20,6 +20,16 @@
 	<dependency>
 	  <groupId>io.strimzi</groupId>
 	  <artifactId>common</artifactId>
+	  <version>${project.version}</version>
+	</dependency>
+	<dependency>
+	  <groupId>io.strimzi</groupId>
+	  <artifactId>kms</artifactId>
+	  <version>${project.version}</version>
+	</dependency>
+	<dependency>
+	  <groupId>io.strimzi</groupId>
+	  <artifactId>kms-test</artifactId>
 	  <version>${project.version}</version>
 	</dependency>
     <dependency>
@@ -52,10 +62,6 @@
         <artifactId>log4j-slf4j-impl</artifactId>
     </dependency>   
     <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-annotations</artifactId>
     </dependency>
@@ -86,6 +92,29 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+          <groupId>com.github.spotbugs</groupId>
+          <artifactId>spotbugs-maven-plugin</artifactId>
+          <version>4.5.3.0</version><dependencies>
+          <!-- overwrite dependency on spotbugs if you want to specify the version of˓→spotbugs -->
+          <dependency>
+              <groupId>com.github.spotbugs</groupId>
+              <artifactId>spotbugs</artifactId>
+              <version>${spotbugs.version}</version>
+          </dependency></dependencies>
+          <configuration>
+              <effort>Max</effort>
+              <!-- Reports all bugs (other values are medium and max) -->
+              <threshold>Low</threshold>
+              <!-- Produces XML report -->
+              <xmlOutput>true</xmlOutput>
+              <!-- Configures the directory in which the XML report is created -->
+              <spotbugsXmlOutputDirectory>${project.build.directory}/spotbugs</spotbugsXmlOutputDirectory>
+              <!-- Configures the file for excluding warnings -->
+              <excludeFilterFile>${project.basedir}/../.spotbugs/spotbugs-exclude.xml</excludeFilterFile>
+          </configuration>
+      </plugin>
+      
     </plugins>
   </build>
 </project>

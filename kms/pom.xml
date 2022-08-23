@@ -1,14 +1,13 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <parent>
-        <groupId>io.strimzi</groupId>
-        <artifactId>topic-encryption</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
-  </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>encmod</artifactId>
-  <name>Encryption module</name>
-  <description>The encryption engine.</description>
+  <parent>
+    <groupId>io.strimzi</groupId>
+    <artifactId>topic-encryption</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+  </parent>
+  <artifactId>kms</artifactId>
+  <name>Key management system</name>
+  <description>Base classes and interfaces for key mangement systems</description>
 
   <dependencies>
 	<dependency>
@@ -16,21 +15,6 @@
 	  <artifactId>common</artifactId>
 	  <version>${project.version}</version>
 	</dependency>
-	<dependency>
-	  <groupId>io.strimzi</groupId>
-	  <artifactId>kms</artifactId>
-	  <version>${project.version}</version>
-	</dependency>
-	<dependency>
-	  <groupId>io.strimzi</groupId>
-	  <artifactId>kms-test</artifactId>
-	  <version>${project.version}</version>
-	  <scope>test</scope>
-	</dependency>
-  	<dependency>
-  		<groupId>org.apache.kafka</groupId>
-  		<artifactId>kafka-clients</artifactId>
-  	</dependency>
     <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-api</artifactId>
@@ -72,5 +56,5 @@
         <artifactId>jackson-databind</artifactId>
     </dependency>
   </dependencies>
-
+  
 </project>

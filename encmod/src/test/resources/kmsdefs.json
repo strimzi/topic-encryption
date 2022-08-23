@@ -1,19 +1,19 @@
 [
   {
-    "name"       : "vault-test",
-    "type"       : "vault",
-    "uri"        : "http://127.0.0.1:8200/v1/secret/data/test",
-    "credential" : "s.3gxh8p83kxkTv9IB66GmORtK"
+    "name"         : "vault-test",
+    "type"         : "vault",
+    "uri"          : "http://127.0.0.1:8200/v1/secret/data/test",
+    "credential"   : "s.3gxh8p83kxkTv9IB66GmORtK"
   },
   {
-    "name"       : "test",
-    "type"       : "test"
+    "name"         : "test",
+    "type"         : "test"
   },
   {
-    "name"       : "cloud",
-    "type"       : "keyprotect",
-    "uri"        : "http://sfsffs.ibm.com/abc",
-    "instanceId" : "shdjkjahkjahd",
-    "credential" : "<apikey>"
+    "name"         : "cloud",
+    "type"         : "key-protect",
+    "uri"          : "http://sfsffs.ibm.com/abc",
+    "instanceId"   : "shdjkjahkjahd",
+    "credential"   : "<apikey>"
   }
 ]
