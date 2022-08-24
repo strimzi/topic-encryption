@@ -86,6 +86,7 @@
         <module>common</module>
         <module>kms</module>
         <module>kms-test</module>
+        <module>kms-vault</module>
     </modules>
 
     <dependencyManagement>
