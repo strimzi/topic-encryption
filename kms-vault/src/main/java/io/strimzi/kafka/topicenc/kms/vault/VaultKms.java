@@ -75,12 +75,7 @@ public class VaultKms implements KeyMgtSystem {
     @Override
     public SecretKey getKey(String keyReference) throws KmsException {
 
-        URI uri;
-        try {
-            uri = createKeyUri(config.getUri(), keyReference);
-        } catch (URISyntaxException e) {
-            throw new KmsException("Error creating Vault URI", e);
-        }
+        URI uri = createKeyUri(config.getUri(), keyReference);
 
         // create request
         HttpRequest request = HttpRequest.newBuilder()
