@@ -110,11 +110,20 @@ public class VaultKms implements KeyMgtSystem {
     }
 
     public static URI createKeyUri(URI baseUri, String keyRef)
-            throws URISyntaxException, UnsupportedEncodingException {
-        String uriStr = String.format("%s/%s",
-                baseUri.toString(),
-                URLEncoder.encode(keyRef, StandardCharsets.UTF_8.toString()));
-        return new URI(uriStr);
+            throws KmsException {
+        String uriStr;
+        try {
+            uriStr = String.format("%s/%s",
+                    baseUri.toString(),
+                    URLEncoder.encode(keyRef, StandardCharsets.UTF_8.toString()));
+        } catch (UnsupportedEncodingException e) {
+            throw new KmsException("Error encoding URL", e);
+        }
+        try {
+            return new URI(uriStr);
+        } catch (URISyntaxException e) {
+            throw new KmsException("Error creating Vault URL", e);
+        }
     }
 
     /**
