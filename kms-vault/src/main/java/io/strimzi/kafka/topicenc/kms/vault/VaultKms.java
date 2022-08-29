@@ -7,12 +7,15 @@ package io.strimzi.kafka.topicenc.kms.vault;
 import static java.util.Objects.isNull;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.charset.StandardCharsets;
 
 import javax.crypto.SecretKey;
 
@@ -42,8 +45,9 @@ public class VaultKms implements KeyMgtSystem {
     private HttpClient client;
     private KmsDefinition config;
 
-    public VaultKms() {}
-    
+    public VaultKms() {
+    }
+
     /**
      * Constructor
      * 
@@ -105,8 +109,11 @@ public class VaultKms implements KeyMgtSystem {
         return EncUtils.base64Decode(key);
     }
 
-    public static URI createKeyUri(URI baseUri, String keyRef) throws URISyntaxException {
-        String uriStr = String.format("%s/%s", baseUri.toString(), keyRef);
+    public static URI createKeyUri(URI baseUri, String keyRef)
+            throws URISyntaxException, UnsupportedEncodingException {
+        String uriStr = String.format("%s/%s",
+                baseUri.toString(),
+                URLEncoder.encode(keyRef, StandardCharsets.UTF_8.toString()));
         return new URI(uriStr);
     }
 
@@ -139,4 +146,3 @@ public class VaultKms implements KeyMgtSystem {
         throw new KmsException("Key " + keyReference + " not found");
     }
 }
-
