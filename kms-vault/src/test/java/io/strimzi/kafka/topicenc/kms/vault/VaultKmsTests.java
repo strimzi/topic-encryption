@@ -9,7 +9,6 @@ import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -37,7 +36,7 @@ import io.strimzi.kafka.topicenc.kms.KmsFactoryManager;
  */
 public class VaultKmsTests {
 
-    private static final String BASE_URI = "http://127.0.0.1:8200/v1/secret/data";
+    private static final String BASE_URI = "https://127.0.0.1:8200/v1/secret/data";
     private static final String STORE_KEY_DATA = "{\"data\":{\"%s\":\"%s\"}}";
 
     KeyMgtSystem vaultKms;
@@ -74,7 +73,7 @@ public class VaultKmsTests {
         // store test key
         try {
             storeKey("test", testKey);
-        } catch (URISyntaxException | IOException | InterruptedException e) {
+        } catch (KmsException | IOException | InterruptedException e) {
             fail("Error storing test key " + e.toString());
             return;
         }
@@ -97,7 +96,7 @@ public class VaultKmsTests {
     }
 
     private void storeKey(String keyRef, String key)
-            throws URISyntaxException, IOException, InterruptedException {
+            throws KmsException, IOException, InterruptedException {
 
         URI uri = VaultKms.createKeyUri(config.getUri(), keyRef);
         String data = String.format(STORE_KEY_DATA, keyRef, key);
