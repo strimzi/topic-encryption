@@ -9,7 +9,6 @@ import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -25,14 +24,19 @@ import io.strimzi.kafka.topicenc.common.EncUtils;
 import io.strimzi.kafka.topicenc.kms.KeyMgtSystem;
 import io.strimzi.kafka.topicenc.kms.KmsDefinition;
 import io.strimzi.kafka.topicenc.kms.KmsException;
-import io.strimzi.kafka.topicenc.kms.VaultKms;
+import io.strimzi.kafka.topicenc.kms.KmsFactoryManager;
 
 /**
- * Testing of the Vault KMS.
+ * Testing of the Vault KMS. This is not complete because: 1) it assumes a vault
+ * instance is running on localhost 2) vault token currently must be entered as
+ * a string below.
+ * 
+ * This will be addressed in a separate PR involving the use of
+ * testcontainers.org
  */
 public class VaultKmsTests {
 
-    private static final String BASE_URI = "http://127.0.0.1:8200/v1/secret/data";
+    private static final String BASE_URI = "https://127.0.0.1:8200/v1/secret/data";
     private static final String STORE_KEY_DATA = "{\"data\":{\"%s\":\"%s\"}}";
 
     KeyMgtSystem vaultKms;
@@ -44,11 +48,10 @@ public class VaultKmsTests {
         try {
             config = new KmsDefinition()
                     .setUri(new URI(BASE_URI))
-                    .setType("vault")
-                    //.setKmsClassname(VaultKms.class.getName())
+                    .setType(VaultKmsFactory.class.getName())
                     .setCredential("<vault token>");
 
-            vaultKms = new VaultKms(config);
+            vaultKms = KmsFactoryManager.getInstance().createKms(config);
 
         } catch (Exception e) {
             fail("Error creating vault kms: " + e.toString());
@@ -70,7 +73,7 @@ public class VaultKmsTests {
         // store test key
         try {
             storeKey("test", testKey);
-        } catch (URISyntaxException | IOException | InterruptedException e) {
+        } catch (KmsException | IOException | InterruptedException e) {
             fail("Error storing test key " + e.toString());
             return;
         }
@@ -93,7 +96,7 @@ public class VaultKmsTests {
     }
 
     private void storeKey(String keyRef, String key)
-            throws URISyntaxException, IOException, InterruptedException {
+            throws KmsException, IOException, InterruptedException {
 
         URI uri = VaultKms.createKeyUri(config.getUri(), keyRef);
         String data = String.format(STORE_KEY_DATA, keyRef, key);
@@ -122,4 +125,3 @@ public class VaultKmsTests {
         return EncUtils.base64Encode(key);
     }
 }
-
