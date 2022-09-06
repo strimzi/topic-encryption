@@ -32,11 +32,7 @@ import io.strimzi.kafka.topicenc.kms.KmsFactoryManager;
  */
 public class KeyProtectTest {
 
-    private static final String NAME = "name";
-    private static final String KP_URI = "uri";
     private static final String KEY_REF = "key_ref";
-    private static final String KP_INSTANCEID = "instance_id";
-    private static final String KP_CREDENTIAL = "credential";
     private static final String KP_PROPS_FILE = "src/test/resources/keyprotect.properties";
     private static final String KMS_DEF_FILE = "src/test/resources/kmsdef.json";
 
