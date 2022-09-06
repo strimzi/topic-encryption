@@ -78,6 +78,7 @@
         <fasterxml.jackson-core.version>2.13.3</fasterxml.jackson-core.version>
         <fasterxml.jackson-databind.version>2.13.3</fasterxml.jackson-databind.version>
         <fasterxml.jackson-annotations.version>2.13.3</fasterxml.jackson-annotations.version>
+        <jvm.options>--add-opens java.base/java.lang=ALL-UNNAMED</jvm.options>
     </properties>  
 
     <modules>
@@ -87,6 +88,7 @@
         <module>kms</module>
         <module>kms-test</module>
         <module>kms-vault</module>
+        <module>kms-keyprotect</module>
     </modules>
 
     <dependencyManagement>
@@ -239,6 +241,15 @@
                 <excludeFilterFile>${project.basedir}/../.spotbugs/spotbugs-exclude.xml</excludeFilterFile>
             </configuration>
         </plugin>
+        
+        <plugin>
+	       <groupId>org.apache.maven.plugins</groupId>
+	       <artifactId>maven-surefire-plugin</artifactId>
+	       <version>3.0.0-M7</version>
+	       <configuration>
+	            <argLine>${jvm.options}</argLine>
+	       </configuration>
+       </plugin>        
      </plugins>
    </build>
    
