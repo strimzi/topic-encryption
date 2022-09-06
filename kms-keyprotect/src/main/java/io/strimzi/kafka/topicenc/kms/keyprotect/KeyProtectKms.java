@@ -1,3 +1,7 @@
+/*
+ * Copyright Strimzi authors.
+ * License: Apache License 2.0 (see the file LICENSE or http://apache.org/licenses/LICENSE-2.0.html).
+ */
 package io.strimzi.kafka.topicenc.kms.keyprotect;
 
 import static java.util.Objects.isNull;
@@ -16,11 +20,14 @@ import com.ibm.cloud.ibm_key_protect_api.v2.model.KeyWithPayload;
 import com.ibm.cloud.sdk.core.http.Response;
 import com.ibm.cloud.sdk.core.security.IamAuthenticator;
 
-import io.strimzi.kafka.topicenc.enc.CryptoUtils;
+import io.strimzi.kafka.topicenc.common.EncUtils;
 import io.strimzi.kafka.topicenc.kms.KeyMgtSystem;
 import io.strimzi.kafka.topicenc.kms.KmsDefinition;
 import io.strimzi.kafka.topicenc.kms.KmsException;
 
+/**
+ * An implementation of KeyMgtSystem for interacting with IBM Key Protect.
+ */
 public class KeyProtectKms implements KeyMgtSystem {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KeyProtectKms.class);
@@ -65,7 +72,7 @@ public class KeyProtectKms implements KeyMgtSystem {
             throw new KmsException("No key returned for key reference.");
         }
         KeyWithPayload key = keys.get(0);
-        return CryptoUtils.createAesSecretKey(key.getPayload());
+        return EncUtils.createAesSecretKey(key.getPayload());
     }
 
     private static IbmKeyProtectApi initKeyProtect(KmsDefinition kmsDef) {
