@@ -47,3 +47,9 @@ classes/
 # MacOS
 .DS_Store
 
+# testi resources
+keyprotect.properties
+kmsdef.json
+
+
+
