@@ -366,7 +366,7 @@ public class MessageHandler implements Handler<Buffer> {
             throws EncSerDerException, GeneralSecurityException, KmsException {
         // instantiate FetchResponse instance
         KafkaRspMsg rsp = new KafkaRspMsg(buffer, reqHeader.apiVersion());
-        FetchResponse<?> fetch = (FetchResponse<?>) AbstractResponse.parseResponse(rsp.getPayload(),
+        FetchResponse fetch = (FetchResponse) AbstractResponse.parseResponse(rsp.getPayload(),
                 reqHeader);
 
         // iterate through response records, decrypting where needed
