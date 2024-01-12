@@ -90,7 +90,7 @@ public class EncModTest {
 
         // instantiate the decrypted fetch response
         KafkaRspMsg rsp = new KafkaRspMsg(fetchRspBuf, reqHeader.apiVersion());
-        FetchResponse<?> fetch = (FetchResponse<?>) AbstractResponse.parseResponse(rsp.getPayload(),
+        FetchResponse fetch = (FetchResponse) AbstractResponse.parseResponse(rsp.getPayload(),
                 reqHeader);
 
         FetchResponseData data = fetch.data();
@@ -102,8 +102,8 @@ public class EncModTest {
         // This tests the integrity of the decrypted response.
         List<FetchableTopicResponse> responses = data.responses();
         for (FetchableTopicResponse topicRsp : responses) {
-            topicRsp.partitionResponses().forEach(pd -> {
-                MemoryRecords recs = (MemoryRecords) pd.recordSet();
+            topicRsp.partitions().forEach(pd -> {
+                MemoryRecords recs = (MemoryRecords) pd.records();
                 recs.records().forEach(r -> {
                     if (r.hasValue()) {
                         byte[] recordData = new byte[r.valueSize()];

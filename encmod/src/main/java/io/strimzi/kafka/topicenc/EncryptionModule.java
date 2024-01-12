@@ -11,7 +11,7 @@ import java.util.Map;
 
 import javax.crypto.SecretKey;
 
-import org.apache.kafka.common.message.FetchResponseData.FetchablePartitionResponse;
+import org.apache.kafka.common.message.FetchResponseData;
 import org.apache.kafka.common.message.FetchResponseData.FetchableTopicResponse;
 import org.apache.kafka.common.message.ProduceRequestData.PartitionProduceData;
 import org.apache.kafka.common.message.ProduceRequestData.TopicProduceData;
@@ -112,18 +112,18 @@ public class EncryptionModule implements EncModControl {
 
         // If this far, the data was encrypted.
         // Navigate into each record and decrypt.
-        for (FetchablePartitionResponse partitionData : fetchRsp.partitionResponses()) {
+        for (FetchResponseData.PartitionData partitionData : fetchRsp.partitions()) {
 
             if (LOGGER.isDebugEnabled()) {
                 String msg = String.format(
                         "partition: %d, logStartOffset: %08X, lastStableOffset: %08X, "
                                 + "partition leader epoch: %04X",
-                        partitionData.partition(), partitionData.currentLeader().leaderEpoch(),
+                        partitionData.partitionIndex(), partitionData.currentLeader().leaderEpoch(),
                         partitionData.logStartOffset(), partitionData.lastStableOffset());
                 LOGGER.debug(msg);
             }
 
-            MemoryRecords recs = (MemoryRecords) partitionData.recordSet();
+            MemoryRecords recs = (MemoryRecords) partitionData.records();
 
             long firstOffset = getFirstOffset(recs);
             MemoryRecordsBuilder builder = createMemoryRecsBuilder(recs.sizeInBytes(),
@@ -147,7 +147,7 @@ public class EncryptionModule implements EncModControl {
             }
             // overwrite the partition's memoryrecords with the decrypted records:
             MemoryRecords newRecs = builder.build();
-            partitionData.setRecordSet(newRecs);
+            partitionData.setRecords(newRecs);
         }
         return true;
     }

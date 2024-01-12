@@ -106,7 +106,7 @@ public class MsgUtil {
      * @param req
      * @return
      */
-    public static Buffer toSendBuffer(FetchResponse<?> fetchRsp, RequestHeader reqHeader) {
+    public static Buffer toSendBuffer(FetchResponse fetchRsp, RequestHeader reqHeader) {
         ByteBuffer serializedRsp = serialize(fetchRsp, reqHeader);
         byte[] rspBytes = serializedRsp.array();
         int bufLen = Integer.BYTES + rspBytes.length;
@@ -124,7 +124,7 @@ public class MsgUtil {
      * @param fetchRsp
      * @return
      */
-    private static ByteBuffer serialize(FetchResponse<?> fetchRsp, RequestHeader reqHeader) {
+    private static ByteBuffer serialize(FetchResponse fetchRsp, RequestHeader reqHeader) {
         ResponseHeader rspHeader = reqHeader.toResponseHeader();
         //System.out.println("****** req: " + reqHeader.apiVersion() + " rsp: " + rspHeader.headerVersion());
         return RequestUtils.serialize(rspHeader.data(), rspHeader.headerVersion(), fetchRsp.data(), reqHeader.apiVersion());
